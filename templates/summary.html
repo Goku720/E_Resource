@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Summary Flipbook</title>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/3/turn.min.js"></script>
+
+    <style>
+        body {
+            background: #e6e6e6;
+            font-family: Arial;
+        }
+
+        #book {
+            width: 900px;
+            height: 600px;
+            margin: 20px auto;
+        }
+
+        .page {
+            width: 900px;
+            height: 600px;
+            background: white;
+            padding: 40px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .page-content {
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        h1,
+        h2 {
+            margin-top: 0;
+        }
+
+        /* Controls */
+        .controls {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .controls button {
+            padding: 8px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        #page-number {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="book"></div>
+
+    <div class="controls">
+        <button onclick="prevPage()">⬅ Previous</button>
+        Page <span id="page-number">1</span>
+        <button onclick="nextPage()">Next ➡</button>
+    </div>
+
+    <script>
+        let pdfName = "{{ pdf_name }}";
+
+        fetch(`/summary_json/${pdfName}`)
+            .then(response => response.json())
+            .then(data => {
+
+                let book = document.getElementById("book");
+
+                // Subject page
+                book.innerHTML += `
+    <div class="page">
+        <div class="page-content">
+            <h1>${data.subject}</h1>
+        </div>
+    </div>`;
+
+                // Global summary
+                book.innerHTML += `
+    <div class="page">
+        <div class="page-content">
+            <h2>Global Summary</h2>
+            <p>${data.global_summary}</p>
+        </div>
+    </div>`;
+
+                // Sections
+                for (let section in data.sections) {
+                    book.innerHTML += `
+        <div class="page">
+            <div class="page-content">
+                <h2>${section}</h2>
+                <p>${data.sections[section].summary}</p>
+            </div>
+        </div>`;
+                }
+
+                // Initialize turn.js
+                $("#book").turn({
+                    width: 900,
+                    height: 600,
+                    autoCenter: true,
+                    when: {
+                        turned: function (event, page) {
+                            document.getElementById("page-number").innerText = page;
+                        }
+                    }
+                });
+
+            });
+
+        // Navigation Functions
+        function nextPage() {
+            $("#book").turn("next");
+        }
+
+        function prevPage() {
+            $("#book").turn("previous");
+        }
+
+        // Keyboard navigation
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "ArrowRight") {
+                nextPage();
+            }
+            if (e.key === "ArrowLeft") {
+                prevPage();
+            }
+        });
+    </script>
+
+</body>
+
+</html>

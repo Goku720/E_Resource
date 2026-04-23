@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <title>Admin Upload</title>
+</head>
+
+<body>
+
+    <h2>Upload PDF</h2>
+
+    <input type="file" id="pdfInput">
+    <button onclick="uploadPDF()">Upload</button>
+
+    <p id="status"></p>
+
+    <script>
+        function uploadPDF() {
+            let fileInput = document.getElementById("pdfInput");
+            let formData = new FormData();
+            formData.append("pdf", fileInput.files[0]);
+
+            fetch("/admin/upload", {
+                method: "POST",
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("status").innerHTML =
+                        "Done!<br>" +
+                        "Original: /flipbook/" + data.pdf_name + "<br>" +
+                        "Summary: /summary/" + data.pdf_name;
+                });
+
+        }
+    </script>
+
+</body>
+
+</html>
