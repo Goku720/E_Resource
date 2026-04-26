@@ -554,6 +554,63 @@
     cursor: pointer;
 }
 
+.btn-remove {
+    background: transparent;
+    color: var(--ink-muted);
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 9px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    transition: all .14s;
+    flex-shrink: 0;
+}
+.btn-remove:hover { border-color: var(--red); color: var(--red); background: var(--red-lt); }
+.btn-remove svg   { width: 13px; height: 13px; }
+
+/* Confirm dialog */
+.confirm-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    animation: fadeUp .15s ease;
+}
+.confirm-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    max-width: 380px; width: 90%;
+    box-shadow: 0 12px 48px rgba(0,0,0,.2);
+}
+.confirm-icon { font-size: 2rem; margin-bottom: 12px; }
+.confirm-box h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem; color: var(--ink); margin-bottom: 8px;
+}
+.confirm-box p {
+    font-size: .84rem; color: var(--ink-soft);
+    margin-bottom: 20px; line-height: 1.5;
+}
+.confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.btn-confirm-del {
+    font-family: 'DM Sans', sans-serif;
+    font-size: .78rem; font-weight: 600;
+    padding: 8px 18px; border-radius: 6px;
+    border: none; background: var(--red); color: #fff;
+    cursor: pointer; transition: background .14s;
+}
+.btn-confirm-del:hover { background: #8a2222; }
+.btn-cancel-del {
+    font-family: 'DM Sans', sans-serif;
+    font-size: .78rem; font-weight: 500;
+    padding: 8px 14px; border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: transparent; color: var(--ink-muted); cursor: pointer;
+}
+
+
         /* ── ANIMATIONS ── */
         @keyframes fadeUp    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         @keyframes slideDown { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
@@ -761,6 +818,14 @@ function render(data) {
                                onchange="doUpload('${pdf.pdf_name}', '${pdf.id}', this)">
                         ${actions}
                     </div>
+                    <button class="btn-remove" title="Remove block"
+                            onclick="confirmRemove(${pdf.id}, '${pdf.title.replace(/'/g, "\\'")}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                            <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+                        </svg>
+                    </button>
                 </div>`;
             }).join("");
 
@@ -1007,6 +1072,43 @@ async function confirmAddBlock(paperId) {
         toast(err.message || "Failed to add block.", "error");
     }
 }
+
+// ── Remove block ──────────────────────────────────────────
+function confirmRemove(pdfId, title) {
+    const existing = document.getElementById("confirmDialog");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "confirm-overlay";
+    overlay.id = "confirmDialog";
+    overlay.innerHTML = `
+        <div class="confirm-box">
+            <div class="confirm-icon">🗑️</div>
+            <h3>Remove Block</h3>
+            <p>Are you sure you want to remove <strong>"${title}"</strong>?
+               This will delete the PDF file and all its processed data permanently.</p>
+            <div class="confirm-actions">
+                <button class="btn-cancel-del" onclick="document.getElementById('confirmDialog').remove()">Cancel</button>
+                <button class="btn-confirm-del" onclick="doRemove(${pdfId})">Yes, Remove</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+}
+
+async function doRemove(pdfId) {
+    document.getElementById("confirmDialog")?.remove();
+    try {
+        const res  = await fetch(`/api/admin/remove_block/${pdfId}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        toast(data.message || "Block removed.", "success");
+        await onSem();   // re-render
+    } catch(err) {
+        toast(err.message || "Failed to remove.", "error");
+    }
+}
+
 </script>
 </body>
 </html>

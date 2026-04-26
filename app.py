@@ -1053,15 +1053,15 @@ def login():
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
-
+ 
         if username == "student" and password == "123":
-            session["user"] = "student"
-            return redirect("/books")
-
-        return "Invalid login"
-
-    return render_template("login.html")
-
+            session["user"] = username
+            return redirect("/library")   # ← send to library instead of books
+ 
+        return render_template("login.html", error="Invalid username or password.")
+ 
+    return render_template("login.html", error=None)
+ 
 
 @app.route("/logout")
 def logout():

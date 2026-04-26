@@ -1,31 +1,483 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <title>KKHSOU Digital Library</title>
-</head>
+    <title>My Books — KKHSOU</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink:      #1a1a2e;
+            --ink-soft: #3d3d5c;
+            --muted:    #8888aa;
+            --bg:       #f4f3ef;
+            --card:     #ffffff;
+            --accent:   #2d3a8c;
+            --accent-lt:#eef0fb;
+            --gold:     #c9a84c;
+            --border:   #e2e1d9;
+            --red:      #b03030;
+            --green:    #1a6e44;
+            --green-lt: #e6f4ed;
+            --radius:   10px;
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--ink);
+            height: 62px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 40px;
+            border-bottom: 3px solid var(--gold);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .logo {
+            font-family: 'Playfair Display', serif;
+            color: #fff; font-size: 1.15rem; letter-spacing: .04em;
+        }
+        .logo em { color: var(--gold); font-style: normal; }
+        .nav { display: flex; align-items: center; gap: 8px; }
+        .nav a {
+            color: rgba(255,255,255,.5);
+            text-decoration: none; font-size: .75rem;
+            font-weight: 500; letter-spacing: .08em;
+            text-transform: uppercase; padding: 6px 14px;
+            border-radius: 6px; transition: all .2s;
+        }
+        .nav a:hover { color: var(--gold); }
+        .nav a.btn-nav {
+            background: rgba(255,255,255,.08);
+            color: rgba(255,255,255,.7);
+            border: 1px solid rgba(255,255,255,.1);
+        }
+        .nav a.btn-nav:hover { background: rgba(255,255,255,.14); color: #fff; }
+        .nav-user {
+            color: rgba(255,255,255,.5);
+            font-size: .78rem;
+            padding-right: 12px;
+            border-right: 1px solid rgba(255,255,255,.1);
+            margin-right: 4px;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            background: var(--accent);
+            padding: 44px 40px 38px;
+            position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 360px; height: 360px; border-radius: 50%;
+            background: rgba(255,255,255,.04);
+            right: -60px; top: -80px;
+        }
+        .hero-sub {
+            font-size: .7rem; font-weight: 600;
+            letter-spacing: .16em; text-transform: uppercase;
+            color: var(--gold); margin-bottom: 8px;
+        }
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem; color: #fff; margin-bottom: 8px;
+        }
+        .hero p { color: rgba(255,255,255,.5); font-size: .9rem; font-weight: 300; }
+
+        /* ── TABS ── */
+        .tabs {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 40px;
+            display: flex; gap: 0;
+            position: sticky; top: 62px; z-index: 90;
+            box-shadow: 0 2px 8px rgba(26,26,46,.05);
+        }
+        .tab {
+            font-size: .8rem; font-weight: 500;
+            padding: 14px 20px;
+            color: var(--muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all .2s;
+            display: flex; align-items: center; gap: 7px;
+            text-decoration: none;
+        }
+        .tab:hover { color: var(--ink); }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+        .tab-count {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            font-size: .65rem; font-weight: 600;
+            padding: 1px 7px; border-radius: 10px;
+            color: var(--muted);
+        }
+        .tab.active .tab-count { background: var(--accent-lt); color: var(--accent); border-color: transparent; }
+
+        /* ── CONTENT ── */
+        .content { max-width: 1100px; margin: 0 auto; padding: 32px 40px 80px; }
+
+        /* ── SEARCH BAR ── */
+        .search-wrap {
+            position: relative; margin-bottom: 28px;
+        }
+        .search-wrap svg {
+            position: absolute; left: 14px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted); width: 16px; height: 16px;
+            pointer-events: none;
+        }
+        #searchInput {
+            width: 100%;
+            font-family: 'DM Sans', sans-serif;
+            font-size: .88rem; color: var(--ink);
+            background: var(--card);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            padding: 11px 14px 11px 40px;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        #searchInput:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(45,58,140,.1);
+        }
+        #searchInput::placeholder { color: var(--muted); }
+
+        /* ── EMPTY STATE ── */
+        .empty {
+            text-align: center; padding: 80px 20px;
+        }
+        .empty svg { opacity: .18; margin-bottom: 18px; }
+        .empty h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem; color: var(--ink-soft); margin-bottom: 8px;
+        }
+        .empty p { color: var(--muted); font-size: .86rem; }
+        .empty a {
+            display: inline-block; margin-top: 20px;
+            background: var(--accent); color: #fff;
+            text-decoration: none; font-size: .82rem; font-weight: 600;
+            padding: 10px 22px; border-radius: 7px;
+            transition: background .2s;
+        }
+        .empty a:hover { background: #222d70; }
+
+        /* ── BOOK GRID ── */
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        /* ── BOOK CARD ── */
+        .book-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: box-shadow .2s, border-color .2s, transform .2s;
+            display: flex; flex-direction: column;
+        }
+        .book-card:hover {
+            box-shadow: 0 6px 28px rgba(26,26,46,.1);
+            border-color: #ccc;
+            transform: translateY(-2px);
+        }
+
+        /* Card spine accent */
+        .card-spine {
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent), #5060c0);
+        }
+        .card-spine.s1 { background: linear-gradient(90deg, #2d3a8c, #5060c0); }
+        .card-spine.s2 { background: linear-gradient(90deg, #1a6e44, #3aaa74); }
+        .card-spine.s3 { background: linear-gradient(90deg, #7a3b00, #c07020); }
+        .card-spine.s4 { background: linear-gradient(90deg, #61176e, #a030b0); }
+        .card-spine.s5 { background: linear-gradient(90deg, #005578, #1090c0); }
+
+        .card-body { padding: 18px 20px 14px; flex: 1; }
+
+        .card-icon {
+            width: 40px; height: 46px;
+            background: var(--accent-lt);
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 14px;
+            position: relative;
+        }
+        .card-icon::after {
+            content: '';
+            position: absolute; top: 0; right: 0;
+            border-left: 10px solid var(--bg);
+            border-bottom: 10px solid rgba(45,58,140,.15);
+            width: 0; height: 0;
+        }
+        .card-icon svg { width: 18px; height: 18px; color: var(--accent); }
+
+        .card-title {
+            font-size: .9rem; font-weight: 600;
+            color: var(--ink); line-height: 1.4;
+            margin-bottom: 8px;
+            /* Show full title, wrap nicely */
+            word-break: break-word;
+        }
+        .card-name-raw {
+            font-size: .72rem;
+            color: var(--muted);
+            font-family: monospace;
+            background: var(--bg);
+            padding: 2px 7px;
+            border-radius: 4px;
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 10px;
+        }
+
+        .card-status {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: .68rem; font-weight: 500;
+            padding: 3px 9px; border-radius: 10px;
+            background: var(--green-lt); color: var(--green);
+        }
+        .card-status .dot {
+            width: 5px; height: 5px;
+            border-radius: 50%; background: var(--green);
+        }
+
+        .card-footer {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border);
+            display: flex; gap: 8px;
+        }
+        .btn-read {
+            flex: 1;
+            font-family: 'DM Sans', sans-serif;
+            font-size: .78rem; font-weight: 600;
+            padding: 8px 14px;
+            background: var(--accent); color: #fff;
+            border: none; border-radius: 6px;
+            cursor: pointer; text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            transition: background .15s;
+        }
+        .btn-read:hover { background: #222d70; }
+        .btn-summary {
+            font-family: 'DM Sans', sans-serif;
+            font-size: .78rem; font-weight: 600;
+            padding: 8px 14px;
+            background: transparent; color: var(--accent);
+            border: 1.5px solid var(--accent);
+            border-radius: 6px;
+            cursor: pointer; text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            transition: all .15s;
+        }
+        .btn-summary:hover { background: var(--accent-lt); }
+
+        /* ── LIBRARY LINK CARD ── */
+        .library-banner {
+            background: var(--accent);
+            border-radius: var(--radius);
+            padding: 22px 26px;
+            display: flex; align-items: center; gap: 20px;
+            margin-bottom: 28px;
+            text-decoration: none;
+            transition: box-shadow .2s;
+        }
+        .library-banner:hover { box-shadow: 0 6px 28px rgba(45,58,140,.25); }
+        .library-banner-icon {
+            width: 48px; height: 48px;
+            background: rgba(255,255,255,.12);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .library-banner-icon svg { width: 22px; height: 22px; color: #fff; }
+        .library-banner-text h3 {
+            font-family: 'Playfair Display', serif;
+            color: #fff; font-size: 1rem; margin-bottom: 3px;
+        }
+        .library-banner-text p { color: rgba(255,255,255,.6); font-size: .8rem; }
+        .library-banner-arrow {
+            margin-left: auto;
+            color: rgba(255,255,255,.5);
+        }
+
+        /* No results */
+        .no-results {
+            text-align: center; padding: 48px 20px;
+            color: var(--muted); font-size: .88rem;
+        }
+
+        @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        .book-card { animation: fadeUp .35s ease both; }
+
+        @media (max-width: 640px) {
+            .header { padding: 0 16px; }
+            .hero { padding: 32px 20px; }
+            .tabs { padding: 0 16px; overflow-x: auto; }
+            .content { padding: 20px 16px 60px; }
+            .book-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
 <body>
 
-    <h2>Available Books</h2>
+<!-- HEADER -->
+<header class="header">
+    <div class="logo">KK<em>H</em>SOU</div>
+    <nav class="nav">
+        <span class="nav-user">👤 Student</span>
+        <a href="/library" class="btn-nav">Course Library</a>
+        <a href="/logout" class="btn-nav">Log Out</a>
+    </nav>
+</header>
 
-    {% for book in books %}
+<!-- HERO -->
+<div class="hero">
+    <div class="hero-sub">KKHSOU Digital Library</div>
+    <h1>My Study Materials</h1>
+    <p>Browse and read your available books and course materials</p>
+</div>
 
-    <div style="border:1px solid #ccc; padding:15px; margin:10px">
+<!-- TABS -->
+<div class="tabs">
+    <a class="tab active" href="/books">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </svg>
+        All Books
+        <span class="tab-count" id="totalCount">{{ books|length }}</span>
+    </a>
+    <a class="tab" href="/library">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+        </svg>
+        By Course
+    </a>
+</div>
 
-        <h3>{{ book }}</h3>
+<!-- CONTENT -->
+<div class="content">
 
-        <a href="/preview/{{ book }}">Preview</a>
+    <!-- Course Library Banner -->
+    <a href="/library" class="library-banner">
+        <div class="library-banner-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+        </div>
+        <div class="library-banner-text">
+            <h3>Browse by Programme &amp; Semester</h3>
+            <p>Find study materials organised by your course structure</p>
+        </div>
+        <div class="library-banner-arrow">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"/>
+            </svg>
+        </div>
+    </a>
 
-        <a href="/flipbook/{{ book }}">Read Full</a>
-
+    <!-- Search -->
+    <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Search books…" oninput="filterBooks()">
     </div>
 
-    {% endfor %}
+    {% if books %}
+    <div class="book-grid" id="bookGrid">
+        {% for book in books %}
+        <div class="book-card" data-title="{{ book.lower() }}" style="animation-delay: {{ loop.index0 * 0.04 }}s">
+            <div class="card-spine s{{ (loop.index0 % 5) + 1 }}"></div>
+            <div class="card-body">
+                <div class="card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                </div>
+                <div class="card-title">{{ book.replace("_", " ").replace("-", " ") }}</div>
+                <div class="card-name-raw">{{ book }}</div>
+                <div class="card-status">
+                    <div class="dot"></div> Ready to read
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="/flipbook/{{ book }}" class="btn-read">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+                    </svg>
+                    Read
+                </a>
+                <a href="/summary/{{ book }}" class="btn-summary">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    Summary
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="no-results" id="noResults" style="display:none">
+        No books match your search.
+    </div>
+    {% else %}
+    <div class="empty">
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <rect x="14" y="10" width="38" height="52" rx="4" fill="#1a1a2e" opacity=".12"/>
+            <rect x="20" y="16" width="38" height="52" rx="4" fill="#1a1a2e" opacity=".18"/>
+            <rect x="26" y="22" width="38" height="52" rx="4" fill="#1a1a2e" opacity=".28"/>
+            <line x1="33" y1="38" x2="57" y2="38" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="33" y1="46" x2="57" y2="46" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="33" y1="54" x2="47" y2="54" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <h3>No books available yet</h3>
+        <p>Study materials haven't been uploaded yet.<br>Check back soon or browse the course library.</p>
+        <a href="/library">Browse Course Library</a>
+    </div>
+    {% endif %}
+</div>
 
+<script>
+function filterBooks() {
+    const q     = document.getElementById("searchInput").value.toLowerCase();
+    const cards = document.querySelectorAll(".book-card");
+    let   shown = 0;
+
+    cards.forEach(card => {
+        const match = card.dataset.title.includes(q);
+        card.style.display = match ? "" : "none";
+        if (match) shown++;
+    });
+
+    document.getElementById("noResults").style.display = shown === 0 ? "block" : "none";
+    document.getElementById("totalCount").textContent  = shown;
+}
+</script>
 </body>
-
 </html>
