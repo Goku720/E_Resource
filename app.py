@@ -715,6 +715,29 @@ def pdf_info(pdf_name):
     doc = fitz.open(pdf_path)
     return jsonify({"pages": len(doc)})
 
+
+# ── Helper used by all routes below ──────────────────────────
+def _get_mirrored_path(base_folder, pdf_name, upload_folder="uploads"):
+    """
+    Given a pdf_name, look up its file_path in the DB and return
+    the mirrored JSON path under base_folder.
+    Falls back to flat base_folder/pdf_name.json if not in DB.
+ 
+    e.g. uploads/MAS/Semester_1/History.../Block1.pdf
+      -> summaries/MAS/Semester_1/History.../Block1.json
+    """
+    pdf_row = fetch_pdf_by_name(pdf_name)
+    if pdf_row and pdf_row.get("file_path"):
+        try:
+            rel      = os.path.relpath(pdf_row["file_path"], upload_folder)
+            rel_json = os.path.splitext(rel)[0] + ".json"
+            return os.path.join(base_folder, rel_json)
+        except ValueError:
+            pass
+    # Fallback: flat file (for manually uploaded books via /admin/upload)
+    return os.path.join(base_folder, f"{pdf_name}.json")
+ 
+
 # =========================================================
 # ADMIN
 # =========================================================
@@ -733,7 +756,13 @@ def admin_upload():
     pdf_name = file.filename.replace(".pdf", "")
     pdf_path = os.path.join(UPLOAD_FOLDER, file.filename)
 
-    summary_path = os.path.join(SUMMARY_FOLDER, f"{pdf_name}.json")
+    summary_path = _get_mirrored_path(SUMMARY_FOLDER, pdf_name)
+
+    #  flat fallback
+    flat_path    = os.path.join(SUMMARY_FOLDER, f"{pdf_name}.json")
+    if not os.path.exists(summary_path) and os.path.exists(flat_path):
+        summary_path = flat_path
+
     page_text_path = os.path.join(PAGE_TEXT_FOLDER, f"{pdf_name}.json")
     status_path = os.path.join(STATUS_FOLDER, f"{pdf_name}.json")
 
@@ -774,32 +803,34 @@ def admin_upload():
 # =========================================================
 @app.route("/summary_json/<path:pdf_name>")
 def summary_json(pdf_name):
-    path = os.path.join(SUMMARY_FOLDER, f"{pdf_name}.json")
-
-    if not os.path.exists(path):
-        return jsonify({"global_summary": "", "sections": {}})
-
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-
-    return jsonify(data)
+    path = _get_mirrored_path(SUMMARY_FOLDER, pdf_name)
+ 
+    # Also try flat fallback for old files
+    flat = os.path.join(SUMMARY_FOLDER, f"{pdf_name}.json")
+ 
+    for p in [path, flat]:
+        if os.path.exists(p):
+            with open(p, encoding="utf-8") as f:
+                return jsonify(json.load(f))
+ 
+    return jsonify({"global_summary": "", "sections": {}})
 
 # =========================================================
 # PAGE TEXT API
 # =========================================================
 @app.route("/page_text/<path:pdf_name>/<int:page>")
 def get_page_text(pdf_name, page):
-    path = os.path.join(PAGE_TEXT_FOLDER, f"{pdf_name}.json")
+    path = _get_mirrored_path(PAGE_TEXT_FOLDER, pdf_name)
+    flat = os.path.join(PAGE_TEXT_FOLDER, f"{pdf_name}.json")
+ 
+    for p in [path, flat]:
+        if os.path.exists(p):
+            with open(p, encoding="utf-8") as f:
+                data = json.load(f)
+            return jsonify({"text": data.get(str(page), "")})
+ 
+    return jsonify({"text": ""})
 
-    if not os.path.exists(path):
-        return jsonify({"text": ""})
-
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-
-    return jsonify({
-        "text": data.get(str(page), "")
-    })
 
 # =========================================================
 # ASK THIS BOOK AI V2
@@ -840,7 +871,13 @@ def ask_book():
             ]
         })
 
-    summary_path = os.path.join(SUMMARY_FOLDER, f"{pdf_name}.json")
+    summary_path = _get_mirrored_path(SUMMARY_FOLDER, pdf_name)
+
+    # fallback (important for old files)
+    flat_path = os.path.join(SUMMARY_FOLDER, f"{pdf_name}.json")
+
+    if not os.path.exists(summary_path) and os.path.exists(flat_path):
+        summary_path = flat_path
 
     if not os.path.exists(summary_path):
         return jsonify({
@@ -1018,21 +1055,21 @@ def ai_videos():
 # BG Processing
 # ======================================
 
-@app.route("/processing_status/<pdf_name>")
+@app.route("/processing_status/<path:pdf_name>")
 def processing_status(pdf_name):
-    path = os.path.join(STATUS_FOLDER, f"{pdf_name}.json")
-
-    if not os.path.exists(path):
-        return jsonify({
-            "status": "not_found",
-            "progress": 0,
-            "message": "No processing status found."
-        })
-
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-
-    return jsonify(data)
+    path = _get_mirrored_path(STATUS_FOLDER, pdf_name)
+    flat = os.path.join(STATUS_FOLDER, f"{pdf_name}.json")
+ 
+    for p in [path, flat]:
+        if os.path.exists(p):
+            with open(p, encoding="utf-8") as f:
+                return jsonify(json.load(f))
+ 
+    return jsonify({
+        "status":   "not_found",
+        "progress": 0,
+        "message":  "No processing status found."
+    })
 
 
 # =========================================================

@@ -15,7 +15,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from celery_app import celery
 
 # ------------------ FOLDERS ------------------
-UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = r"D:\E_Resource\uploads"
 SUMMARY_FOLDER = "summaries"
 PAGE_TEXT_FOLDER = "page_texts"
 STATUS_FOLDER = "status"
@@ -36,14 +36,33 @@ model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 # =========================================================
 # STATUS HELPERS
 # =========================================================
-def update_status(pdf_name, status, progress=0, message=""):
-    path = os.path.join(STATUS_FOLDER, f"{pdf_name}.json")
+def update_status(pdf_name, status, progress=0, message="", pdf_path=None):
+    """
+    Save status JSON mirroring the upload subfolder structure.
+    e.g. uploads/MAS/Semester_1/History.../Block1.pdf
+      ->   status/MAS/Semester_1/History.../Block1.json
+    Falls back to flat status/pdf_name.json if pdf_path not given.
+    """
+    if pdf_path:
+        try:
+            rel      = os.path.relpath(pdf_path, UPLOAD_FOLDER)
+            rel_json = os.path.splitext(rel)[0] + ".json"
+            path     = os.path.join(STATUS_FOLDER, rel_json)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+        except ValueError:
+            # relpath fails if on different Windows drives
+            path = os.path.join(STATUS_FOLDER, f"{pdf_name}.json")
+    else:
+        path = os.path.join(STATUS_FOLDER, f"{pdf_name}.json")
+ 
     with open(path, "w", encoding="utf-8") as f:
         json.dump({
-            "status": status,
+            "status":   status,
             "progress": progress,
-            "message": message
+            "message":  message
         }, f, ensure_ascii=False, indent=2)
+ 
+ 
 
 # =========================================================
 # OCR + TEXT CLEANING
@@ -437,90 +456,102 @@ def build_smart_summary(section_title, text):
 @celery.task(bind=True)
 def process_book_task(self, pdf_name, pdf_path):
     try:
-        update_status(pdf_name, "extracting", 10, "Extracting text from PDF...")
-
-        summary_path = os.path.join(SUMMARY_FOLDER, f"{pdf_name}.json")
-        page_text_path = os.path.join(PAGE_TEXT_FOLDER, f"{pdf_name}.json")
-
+        # ── Build mirrored subfolder paths ──────────────────
+        try:
+            rel           = os.path.relpath(pdf_path, UPLOAD_FOLDER)
+            rel_json      = os.path.splitext(rel)[0] + ".json"
+        except ValueError:
+            # Different Windows drives — fall back to flat name
+            rel_json      = f"{pdf_name}.json"
+ 
+        summary_path   = os.path.join(SUMMARY_FOLDER,   rel_json)
+        page_text_path = os.path.join(PAGE_TEXT_FOLDER, rel_json)
+ 
+        os.makedirs(os.path.dirname(summary_path),   exist_ok=True)
+        os.makedirs(os.path.dirname(page_text_path), exist_ok=True)
+        # ────────────────────────────────────────────────────
+ 
+        update_status(pdf_name, "extracting", 10, "Extracting text from PDF...", pdf_path)
+ 
         # 1. Extract text
         page_texts = extract_text_hybrid(pdf_path)
-
-        update_status(pdf_name, "saving_pages", 30, "Saving page-wise text...")
-
+ 
+        update_status(pdf_name, "saving_pages", 30, "Saving page-wise text...", pdf_path)
+ 
         # 2. Save page-wise text
         page_text_dict = {str(p["page"]): p["text"] for p in page_texts}
         with open(page_text_path, "w", encoding="utf-8") as f:
             json.dump(page_text_dict, f, ensure_ascii=False, indent=2)
-
-        update_status(pdf_name, "structuring", 50, "Detecting sections...")
-
+ 
+        update_status(pdf_name, "structuring", 50, "Detecting sections...", pdf_path)
+ 
         # 3. Detect sections
         sections = split_sections_with_pages(page_texts)
         smart_sections = {}
-
+ 
         total_sections = max(len(sections), 1)
-        done_sections = 0
-
+        done_sections  = 0
+ 
         for title, data in sections.items():
-            text = data["text"]
+            text  = data["text"]
             pages = sorted(list(set(data["pages"])))
-
+ 
             if len(text.strip()) < 250:
                 continue
-
+ 
             smart_summary = build_smart_summary(title, text[:3000])
-
+ 
             smart_sections[title] = {
-                "type": smart_summary["type"],
-                "title": smart_summary["title"],
-                "summary_text": smart_summary["summary_text"],
-                "main_idea": smart_summary["main_idea"],
+                "type":               smart_summary["type"],
+                "title":              smart_summary["title"],
+                "summary_text":       smart_summary["summary_text"],
+                "main_idea":          smart_summary["main_idea"],
                 "simple_explanation": smart_summary["simple_explanation"],
-                "definitions": smart_summary["definitions"],
-                "key_points": smart_summary["key_points"],
-                "steps": smart_summary["steps"],
-                "formulae": smart_summary["formulae"],
-                "code_snippet": smart_summary["code_snippet"],
-                "examples": smart_summary["examples"],
-                "comparison_points": smart_summary["comparison_points"],
-                "exam_questions": smart_summary["exam_questions"],
-                "short_answer": smart_summary["short_answer"],
-                "long_answer": smart_summary["long_answer"],
-                "start_page": min(pages),
-                "end_page": max(pages)
+                "definitions":        smart_summary["definitions"],
+                "key_points":         smart_summary["key_points"],
+                "steps":              smart_summary["steps"],
+                "formulae":           smart_summary["formulae"],
+                "code_snippet":       smart_summary["code_snippet"],
+                "examples":           smart_summary["examples"],
+                "comparison_points":  smart_summary["comparison_points"],
+                "exam_questions":     smart_summary["exam_questions"],
+                "short_answer":       smart_summary["short_answer"],
+                "long_answer":        smart_summary["long_answer"],
+                "start_page":         min(pages),
+                "end_page":           max(pages)
             }
-
+ 
             done_sections += 1
             progress = 50 + int((done_sections / total_sections) * 30)
-            update_status(pdf_name, "summarizing", progress, f"Summarizing section {done_sections}/{total_sections}...")
-
-        update_status(pdf_name, "global_summary", 90, "Generating global summary...")
-
+            update_status(pdf_name, "summarizing", progress,
+                          f"Summarizing section {done_sections}/{total_sections}...", pdf_path)
+ 
+        update_status(pdf_name, "global_summary", 90, "Generating global summary...", pdf_path)
+ 
         # 4. Global summary
-        full_text = " ".join([p["text"] for p in page_texts])
+        full_text      = " ".join([p["text"] for p in page_texts])
         global_summary = summarize_with_chunks(full_text[:2500])
-
+ 
         if not is_summary_reliable(global_summary):
             global_summary = "This book contains educational content. Some sections may need better extraction for more reliable summaries."
-
+ 
         # 5. Save summary JSON
         with open(summary_path, "w", encoding="utf-8") as f:
             json.dump({
                 "global_summary": global_summary,
-                "sections": smart_sections
+                "sections":       smart_sections
             }, f, ensure_ascii=False, indent=2)
-
-        update_status(pdf_name, "ready", 100, "Book processing completed successfully.")
+ 
+        update_status(pdf_name, "ready", 100,
+                      "Book processing completed successfully.", pdf_path)
         update_pdf_status(pdf_name, "ready")
-        
-    
-
+ 
         return {
-            "success": True,
+            "success":  True,
             "pdf_name": pdf_name,
-            "message": "Book processed successfully."
+            "message":  "Book processed successfully."
         }
-
+ 
     except Exception as e:
-        update_status(pdf_name, "failed", 0, str(e))
+        update_status(pdf_name, "failed", 0, str(e), pdf_path)
         raise e

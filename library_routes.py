@@ -229,21 +229,32 @@ def remove_block(pdf_id):
         return jsonify({"error": "Block not found"}), 404
  
     pdf = dict(pdf)
+    file_path = pdf["file_path"]
  
-    # Delete physical files if they exist
-    for folder, ext in [
-        ("uploads",   ".pdf"),
-        ("summaries", ".json"),
-        ("page_texts",".json"),
-        ("status",    ".json"),
-    ]:
-        path = os.path.join(folder, f"{pdf['pdf_name']}{ext}")
-        if os.path.exists(path):
-            os.remove(path)
+    def _mirror(base, fp, up="uploads"):
+        try:
+            rel = os.path.relpath(fp, up)
+            return os.path.join(base, os.path.splitext(rel)[0] + ".json")
+        except ValueError:
+            return None
  
-    # Also try the nested upload path
-    if pdf["file_path"] and os.path.exists(pdf["file_path"]):
-        os.remove(pdf["file_path"])
+    # Delete PDF file
+    if file_path and os.path.exists(file_path):
+        os.remove(file_path)
+ 
+    # Delete summaries, page_texts, status — try mirrored path first, then flat
+    for folder in ["summaries", "page_texts", "status"]:
+        paths_to_try = []
+        if file_path:
+            m = _mirror(folder, file_path)
+            if m:
+                paths_to_try.append(m)
+        paths_to_try.append(os.path.join(folder, f"{pdf['pdf_name']}.json"))
+ 
+        for p in paths_to_try:
+            if p and os.path.exists(p):
+                os.remove(p)
+                break   # only delete once
  
     conn.execute("DELETE FROM pdfs WHERE id = ?", (pdf_id,))
     conn.commit()
