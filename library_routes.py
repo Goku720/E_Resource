@@ -4,6 +4,9 @@
 #   from library_routes import library_bp
 #   app.register_blueprint(library_bp)
 
+# library_routes.py
+
+import os
 from flask import Blueprint, render_template, jsonify, session, redirect, url_for, request
 from database import (
     fetch_all_programmes,
@@ -14,8 +17,7 @@ from database import (
     update_pdf_status,
     get_db
 )
-
-library_bp = Blueprint("library", __name__)
+from tasks import process_book_task
 
 TYPE_LABELS = {
     "DSC": "Discipline Specific Core",
@@ -31,6 +33,7 @@ TYPE_ORDER = ["DSC", "DSE", "AEC", "VAC", "GE", "SEC"]
 # ─────────────────────────────────────────────────────────────
 # PAGE
 # ─────────────────────────────────────────────────────────────
+library_bp = Blueprint("library", __name__)
 
 @library_bp.route("/library")
 def library():
@@ -132,6 +135,64 @@ def api_pdf_status(pdf_name):
     return jsonify({"status": pdf["status"], "title": pdf["title"]})
 
 
+
+@library_bp.route("/api/admin/add_block", methods=["POST"])
+def add_block():
+    data     = request.get_json()
+    paper_id = data.get("paper_id")
+    title    = data.get("title", "").strip()
+
+    if not paper_id or not title:
+        return jsonify({"error": "paper_id and title are required"}), 400
+
+    # Build pdf_name — need paper info to construct the path
+    conn  = get_db()
+    paper = conn.execute("""
+        SELECT p.*, pr.code, pr.name as prog_name
+        FROM papers p
+        JOIN programmes pr ON pr.id = p.programme_id
+        WHERE p.id = ?
+    """, (paper_id,)).fetchone()
+
+    if not paper:
+        conn.close()
+        return jsonify({"error": "Paper not found"}), 404
+
+    # Count existing blocks for this paper to auto-number
+    existing = conn.execute(
+        "SELECT COUNT(*) as cnt FROM pdfs WHERE paper_id = ?", (paper_id,)
+    ).fetchone()["cnt"]
+
+    block_num = existing + 1
+    safe_title = title.replace(" ", "_").replace("/", "-")[:40]
+    pdf_name  = f"{paper['code']}_S{paper['semester']}_P{paper_id}_Block{block_num}_{safe_title}"
+
+    folder    = os.path.join(
+        "uploads",
+        paper["code"],
+        f"Semester_{paper['semester']}",
+        paper["paper_name"].replace(" ", "_").replace("/", "-")[:50]
+    )
+    file_path = os.path.join(folder, f"{pdf_name}.pdf")
+
+    conn.execute("""
+        INSERT INTO pdfs (paper_id, title, pdf_name, file_path, status)
+        VALUES (?, ?, ?, ?, 'pending')
+    """, (paper_id, title, pdf_name, file_path))
+    conn.commit()
+
+    new_id = conn.execute("SELECT last_insert_rowid() as id").fetchone()["id"]
+    conn.close()
+
+    return jsonify({
+        "ok":       True,
+        "id":       new_id,
+        "pdf_name": pdf_name,
+        "title":    title,
+        "status":   "pending",
+        "file_path": file_path
+    })
+
 # ─────────────────────────────────────────────────────────────
 # ADMIN — mark a PDF as ready after uploading it manually
 # ─────────────────────────────────────────────────────────────
@@ -145,3 +206,73 @@ def mark_ready(pdf_name):
     """
     update_pdf_status(pdf_name, "ready")
     return jsonify({"ok": True, "pdf_name": pdf_name, "status": "ready"})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@library_bp.route("/admin/library")
+def admin_library():
+    """Admin page for uploading PDFs to specific paper slots."""
+    return render_template("admin_library.html")
+
+
+@library_bp.route("/admin/library/upload", methods=["POST"])
+def admin_library_upload():
+    """
+    Upload a PDF into a specific slot in the library.
+    Expects:  pdf       (file)
+              pdf_name  (the unique key, e.g. "MAS_S1_P1_Block1")
+              pdf_id    (the DB row id)
+    """
+    file     = request.files.get("pdf")
+    pdf_name = request.form.get("pdf_name", "").strip()
+    pdf_id   = request.form.get("pdf_id", "").strip()
+
+    # ── Validate ──────────────────────────────────────────
+    if not file or file.filename == "":
+        return jsonify({"error": "No file uploaded"}), 400
+
+    if not file.filename.lower().endswith(".pdf"):
+        return jsonify({"error": "Only PDF files are allowed"}), 400
+
+    if not pdf_name:
+        return jsonify({"error": "pdf_name is required"}), 400
+
+    # ── Look up the slot in the DB ────────────────────────
+    pdf_row = fetch_pdf_by_name(pdf_name)
+    if not pdf_row:
+        return jsonify({"error": f"No PDF slot found for '{pdf_name}'"}), 404
+
+    # ── Save to the correct folder ────────────────────────
+    file_path = pdf_row["file_path"]          # path was pre-built by seed.py
+    folder    = os.path.dirname(file_path)
+
+    os.makedirs(folder, exist_ok=True)        # create folder if not exists
+    file.save(file_path)                      # save PDF to disk
+
+    # ── Mark as processing in DB ──────────────────────────
+    update_pdf_status(pdf_name, "processing")
+
+    # ── Trigger your existing Celery pipeline ─────────────
+    # process_book_task expects (pdf_name, pdf_path) exactly
+    # like your existing /admin/upload route does
+    process_book_task.delay(pdf_name, file_path)
+
+    return jsonify({
+        "ok":       True,
+        "pdf_name": pdf_name,
+        "status":   "processing",
+        "message":  "Uploaded successfully. Processing started in background."
+    })
+
+

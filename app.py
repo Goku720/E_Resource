@@ -10,8 +10,9 @@ from tasks import process_book_task
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from topic_extractor import extract_topics
 from video_recommender import search_videos
-
+from library_routes import library_bp
 app = Flask(__name__)
+app.register_blueprint(library_bp)
 app.secret_key = "secret"
 
 # ------------------ FOLDERS ------------------

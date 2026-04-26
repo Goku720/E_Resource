@@ -505,6 +505,9 @@ def process_book_task(self, pdf_name, pdf_path):
             }, f, ensure_ascii=False, indent=2)
 
         update_status(pdf_name, "ready", 100, "Book processing completed successfully.")
+        
+        from database import update_pdf_status
+        update_pdf_status(pdf_name, "ready")
 
         return {
             "success": True,
