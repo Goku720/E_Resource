@@ -414,7 +414,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc=
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 const previewMode=JSON.parse('{{ preview | tojson | safe }}');
-const pdfName="{{ pdf_name }}";
+const pdfName = "{{ pdf_name }}";   // for AI APIs
+const filePath = "{{ file_path }}"; // for PDF loading
 
 const canvas=document.getElementById("pdfCanvas");
 const ctx=canvas.getContext("2d",{alpha:false});
@@ -432,7 +433,7 @@ if(previewMode) document.getElementById("pvBanner").style.display="block";
 fetch(`/summary_json/${pdfName}`).then(r=>r.json())
   .then(d=>{sumData=d;sumLoaded=true;}).catch(()=>{});
 
-pdfjsLib.getDocument(`/pdf/${pdfName}`).promise.then(doc=>{
+pdfjsLib.getDocument(`/pdf/${filePath}`).promise.then(doc=>{
   pdfDoc=doc; total=doc.numPages;
   ["pgTot","pgN"].forEach(id=>document.getElementById(id).textContent=total);
   document.getElementById("pgInput").max=total;

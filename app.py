@@ -6,6 +6,7 @@ import pytesseract
 from PIL import Image
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_from_directory
 from tasks import process_book_task
+from database import fetch_pdf_by_name
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from topic_extractor import extract_topics
@@ -16,7 +17,7 @@ app.register_blueprint(library_bp)
 app.secret_key = "secret"
 
 # ------------------ FOLDERS ------------------
-UPLOAD_FOLDER = "uploads"
+UPLOAD_FOLDER = r"D:\E_Resource\uploads"
 SUMMARY_FOLDER = "summaries"
 PAGE_TEXT_FOLDER = "page_texts"
 STATUS_FOLDER = "status"
@@ -690,10 +691,18 @@ def confidence_label(score):
 # =========================================================
 # PDF FILE SERVING
 # =========================================================
-@app.route("/pdf/<pdf_name>")
+@app.route("/pdf/<path:pdf_name>")
 def serve_pdf(pdf_name):
-    filename = f"{pdf_name}.pdf"
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    if "user" not in session:
+        return redirect(url_for("login"))
+    # Look up the actual file path from the database
+    pdf_row = fetch_pdf_by_name(pdf_name)
+    if not pdf_row:
+        return f"PDF not found in database: {pdf_name}", 404
+    abs_path = pdf_row["file_path"]
+    if not os.path.isfile(abs_path):
+        return f"PDF file missing on disk: {abs_path}", 404
+    return send_from_directory(os.path.dirname(abs_path), os.path.basename(abs_path))
 
 
 @app.route("/pdf_info/<pdf_name>")
@@ -763,7 +772,7 @@ def admin_upload():
 # =========================================================
 # SUMMARY API
 # =========================================================
-@app.route("/summary_json/<pdf_name>")
+@app.route("/summary_json/<path:pdf_name>")
 def summary_json(pdf_name):
     path = os.path.join(SUMMARY_FOLDER, f"{pdf_name}.json")
 
@@ -778,7 +787,7 @@ def summary_json(pdf_name):
 # =========================================================
 # PAGE TEXT API
 # =========================================================
-@app.route("/page_text/<pdf_name>/<int:page>")
+@app.route("/page_text/<path:pdf_name>/<int:page>")
 def get_page_text(pdf_name, page):
     path = os.path.join(PAGE_TEXT_FOLDER, f"{pdf_name}.json")
 
@@ -859,12 +868,8 @@ def ask_book():
     real_overlap = has_real_overlap(question, best_section) if best_section else 0
 
     # 🔍 Page-text fallback only if section match is weak
-    page_fallback = None
-    if (best_score < 18 and page_score < 18) or real_overlap == 0:
-
-        # 🚫 HARD RELEVANCE FILTER
-        # If both section and page matches are weak, reject
-        page_score = page_fallback["score"] if page_fallback else 0
+    page_fallback = search_page_texts(question, pdf_name, current_page)   # ← actually call it!
+    page_score = page_fallback["score"] if page_fallback else 0
 
     if best_score < 18 and page_score < 18:
         return jsonify({
@@ -1033,17 +1038,27 @@ def processing_status(pdf_name):
 # =========================================================
 # FLIPBOOK / VIEWER
 # =========================================================
-@app.route("/flipbook/<pdf_name>")
+@app.route("/flipbook/<pdf_name>")        # ← no longer <path:>, pdf_name is a flat key
 def flipbook_view(pdf_name):
     if "user" not in session:
         return redirect(url_for("login"))
 
-    return render_template("flipbook.html", pdf_name=pdf_name, preview=False)
-
-
-@app.route("/preview/<pdf_name>")
+    return render_template(
+        "flipbook.html",
+        pdf_name=pdf_name,
+        file_path=pdf_name,              # ← same value; serve_pdf will DB-lookup the real path
+        preview=False
+    )
+@app.route("/preview/<path:pdf_name>")
 def preview(pdf_name):
-    return render_template("flipbook.html", pdf_name=pdf_name, preview=True)
+    file_path = f"{pdf_name}.pdf"
+
+    return render_template(
+        "flipbook.html",
+        pdf_name=pdf_name,
+        file_path=file_path,
+        preview=True
+    )
 
 # =========================================================
 # LOGIN

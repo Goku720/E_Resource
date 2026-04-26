@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Admin — KKHSOU</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink:       #12121e;
+            --ink-soft:  #3a3a52;
+            --ink-muted: #7a7a99;
+            --bg:        #f2f1ed;
+            --bg-card:   #ffffff;
+            --accent:    #2d3a8c;
+            --accent-lt: #eef0fb;
+            --gold:      #c9a84c;
+            --border:    #dddcD4;
+            --green:     #1a6e44;
+            --green-lt:  #e6f4ed;
+            --amber:     #7a3b00;
+            --amber-lt:  #fdf0e3;
+            --red:       #b03030;
+            --red-lt:    #fdeaea;
+            --blue-lt:   #e8f0fe;
+            --radius:    8px;
+            --mono:      'IBM Plex Mono', monospace;
+
+            --c-dsc:#2d3a8c; --c-dse:#1a6e44; --c-aec:#7a3b00;
+            --c-vac:#61176e; --c-ge:#005578; --c-sec:#3d4200;
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+        }
+
+        /* ── HEADER ── */
+        .header {
+            background: var(--ink);
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 36px;
+            border-bottom: 3px solid var(--gold);
+            position: sticky; top: 0; z-index: 200;
+        }
+        .logo {
+            font-family: 'Playfair Display', serif;
+            color: #fff;
+            font-size: 1.1rem;
+            letter-spacing: .04em;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .logo em { color: var(--gold); font-style: normal; }
+        .logo-tag {
+            font-family: var(--mono);
+            font-size: .62rem;
+            background: rgba(201,168,76,.18);
+            color: var(--gold);
+            padding: 3px 8px;
+            border-radius: 4px;
+            letter-spacing: .08em;
+        }
+        .nav a {
+            color: rgba(255,255,255,.5);
+            text-decoration: none;
+            font-size: .75rem;
+            font-weight: 500;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            margin-left: 24px;
+            transition: color .2s;
+        }
+        .nav a:hover { color: var(--gold); }
+
+        /* ── LAYOUT ── */
+        .layout {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            background: var(--ink);
+            padding: 28px 20px;
+            position: sticky;
+            top: 60px;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sidebar-title {
+            font-family: var(--mono);
+            font-size: .62rem;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.3);
+            padding: 0 10px 10px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            margin-bottom: 6px;
+        }
+        .fg {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+        .fg label {
+            font-family: var(--mono);
+            font-size: .6rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,.35);
+            padding-left: 2px;
+        }
+        .fg select {
+            appearance: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: .84rem;
+            color: #fff;
+            background: rgba(255,255,255,.07);
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 6px;
+            padding: 9px 30px 9px 12px;
+            width: 100%;
+            cursor: pointer;
+            transition: border-color .2s, background .2s;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%237a7a99' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+        .fg select:focus { outline: none; border-color: var(--gold); background: rgba(255,255,255,.1); }
+        .fg select:disabled { opacity: .35; cursor: not-allowed; }
+        .fg select option { background: #1a1a2e; color: #fff; }
+
+        /* Sidebar stats */
+        .sidebar-stats {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,.08);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .sstat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background: rgba(255,255,255,.05);
+            border-radius: 6px;
+        }
+        .sstat-label { font-size: .72rem; color: rgba(255,255,255,.45); }
+        .sstat-val   { font-family: var(--mono); font-size: .82rem; color: #fff; font-weight: 500; }
+        .sstat-val.green  { color: #4ec98a; }
+        .sstat-val.amber  { color: var(--gold); }
+
+        /* ── MAIN ── */
+        .main {
+            padding: 32px 36px 60px;
+            overflow-y: auto;
+        }
+
+        /* ── EMPTY STATE ── */
+        .empty {
+            text-align: center;
+            padding: 80px 20px;
+            animation: fadeUp .4s ease;
+        }
+        .empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: .3; }
+        .empty h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+            color: var(--ink-soft);
+            margin-bottom: 8px;
+        }
+        .empty p { color: var(--ink-muted); font-size: .86rem; }
+
+        /* ── LOADING ── */
+        .loading { text-align: center; padding: 60px 20px; }
+        .spinner {
+            width: 32px; height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            margin: 0 auto 12px;
+        }
+        .loading p { color: var(--ink-muted); font-size: .85rem; }
+
+        /* ── SECTION HEADER ── */
+        .section-hd {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1.5px solid var(--border);
+            animation: fadeUp .3s ease;
+        }
+        .section-prog {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            color: var(--accent);
+        }
+        .section-name { color: var(--ink-soft); font-size: .9rem; font-weight: 300; }
+        .section-badge {
+            margin-left: auto;
+            background: var(--accent);
+            color: #fff;
+            font-family: var(--mono);
+            font-size: .65rem;
+            letter-spacing: .08em;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        /* ── PAPER GROUP ── */
+        .tgroup { margin-bottom: 28px; animation: fadeUp .4s ease both; }
+        .tgroup:nth-child(2){animation-delay:.04s}
+        .tgroup:nth-child(3){animation-delay:.08s}
+        .tgroup:nth-child(4){animation-delay:.12s}
+
+        .tgroup-hd {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 10px;
+        }
+        .tbadge {
+            font-family: var(--mono);
+            font-size: .6rem; font-weight: 500;
+            letter-spacing: .1em;
+            padding: 3px 9px;
+            border-radius: 4px;
+            color: #fff;
+        }
+        .tbadge.DSC{background:var(--c-dsc)} .tbadge.DSE{background:var(--c-dse)}
+        .tbadge.AEC{background:var(--c-aec)} .tbadge.VAC{background:var(--c-vac)}
+        .tbadge.GE{background:var(--c-ge)}   .tbadge.SEC{background:var(--c-sec)}
+        .tgroup-label { color: var(--ink-muted); font-size: .74rem; }
+        .tgroup-line  { flex:1; height:1px; background:var(--border); }
+
+        /* ── PAPER CARD ── */
+        .paper {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .paper-hd {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 13px 16px;
+            cursor: pointer;
+            user-select: none;
+            transition: background .15s;
+        }
+        .paper-hd:hover { background: #fafaf8; }
+        .paper-num {
+            width: 24px; height: 24px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: var(--bg);
+            font-family: var(--mono);
+            font-size: .65rem;
+            color: var(--ink-muted);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .paper-name { flex:1; font-size: .88rem; font-weight: 500; color: var(--ink); }
+        .paper-meta {
+            display: flex; align-items: center; gap: 8px;
+        }
+        .prog-pill {
+            font-family: var(--mono);
+            font-size: .6rem;
+            color: var(--ink-muted);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+        .ready-count {
+            font-family: var(--mono);
+            font-size: .68rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .ready-count.all   { background: var(--green-lt); color: var(--green); }
+        .ready-count.some  { background: var(--amber-lt); color: var(--amber); }
+        .ready-count.none  { background: var(--red-lt);   color: var(--red);   }
+
+        .chev {
+            width: 16px; height: 16px;
+            transition: transform .22s;
+            color: var(--ink-muted);
+        }
+        .paper.open .chev { transform: rotate(180deg); }
+
+        /* ── PDF ROWS ── */
+        .pdf-list {
+            display: none;
+            border-top: 1px solid var(--border);
+            background: #fafaf8;
+        }
+        .paper.open .pdf-list { display: block; animation: slideDown .18s ease; }
+
+        .pdf-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px 12px 50px;
+            border-bottom: 1px solid var(--border);
+            transition: background .12s;
+        }
+        .pdf-row:last-child { border-bottom: none; }
+        .pdf-row:hover { background: #f2f1ec; }
+
+        .pdf-icon {
+            width: 32px; height: 36px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .pdf-icon::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            border-left: 7px solid var(--bg);
+            border-bottom: 7px solid var(--border);
+            width: 0; height: 0;
+        }
+        .pdf-icon svg { width: 14px; height: 14px; color: var(--red); }
+
+        .pdf-info { flex: 1; min-width: 0; }
+        .pdf-title {
+            font-size: .83rem; font-weight: 500; color: var(--ink);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .pdf-path {
+            font-family: var(--mono);
+            font-size: .62rem;
+            color: var(--ink-muted);
+            margin-top: 2px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        /* status pill */
+        .status-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: .68rem; font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .status-pill .dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+        }
+        .status-pill.ready      { background: var(--green-lt); color: var(--green); }
+        .status-pill.ready .dot { background: var(--green); }
+        .status-pill.pending    { background: var(--amber-lt); color: var(--amber); }
+        .status-pill.pending .dot { background: var(--amber); }
+        .status-pill.processing { background: var(--blue-lt); color: var(--accent); }
+        .status-pill.processing .dot { background: var(--accent); animation: blink 1s infinite; }
+        .status-pill.failed     { background: var(--red-lt); color: var(--red); }
+        .status-pill.failed .dot { background: var(--red); }
+
+        /* upload zone */
+        .upload-zone {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* hidden file input trick */
+        .upload-zone input[type="file"] { display: none; }
+
+        .btn-upload {
+            font-family: 'DM Sans', sans-serif;
+            font-size: .73rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1.5px solid var(--accent);
+            background: transparent;
+            color: var(--accent);
+            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 5px;
+            transition: all .14s;
+            white-space: nowrap;
+        }
+        .btn-upload:hover { background: var(--accent-lt); }
+        .btn-upload.uploading {
+            border-color: var(--ink-muted);
+            color: var(--ink-muted);
+            cursor: not-allowed;
+        }
+
+        .btn-replace {
+            font-family: 'DM Sans', sans-serif;
+            font-size: .73rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1.5px solid var(--border);
+            background: transparent;
+            color: var(--ink-muted);
+            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 5px;
+            transition: all .14s;
+            white-space: nowrap;
+        }
+        .btn-replace:hover { border-color: var(--accent); color: var(--accent); }
+
+        .btn-view {
+            font-family: 'DM Sans', sans-serif;
+            font-size: .73rem;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: none;
+            background: var(--accent);
+            color: #fff;
+            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 5px;
+            transition: background .14s;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        .btn-view:hover { background: #222d70; }
+
+        /* progress bar */
+        .upload-progress {
+            display: none;
+            height: 3px;
+            background: var(--border);
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .upload-progress.show { display: block; }
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 2px;
+            width: 0%;
+            transition: width .3s ease;
+        }
+
+        /* ── TOAST ── */
+        .toast-wrap {
+            position: fixed;
+            bottom: 28px; right: 28px;
+            display: flex; flex-direction: column; gap: 10px;
+            z-index: 999;
+        }
+        .toast {
+            background: var(--ink);
+            color: #fff;
+            font-size: .8rem;
+            padding: 12px 18px;
+            border-radius: 8px;
+            border-left: 3px solid var(--gold);
+            box-shadow: 0 4px 20px rgba(0,0,0,.25);
+            animation: toastIn .25s ease;
+            display: flex; align-items: center; gap: 8px;
+            min-width: 240px;
+        }
+        .toast.success { border-left-color: #4ec98a; }
+        .toast.error   { border-left-color: var(--red); }
+        .toast.fade-out { animation: toastOut .3s ease forwards; }
+        
+        .add-block-row {
+    padding: 10px 16px 10px 50px;
+    border-top: 1px dashed var(--border);
+    background: #f7f6f2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.btn-add-block {
+    font-family: 'DM Sans', sans-serif;
+    font-size: .73rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: transparent;
+    border: 1.5px dashed var(--accent);
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all .15s;
+    opacity: .7;
+}
+.btn-add-block:hover { opacity: 1; background: var(--accent-lt); }
+
+.add-block-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+.block-input {
+    font-family: 'DM Sans', sans-serif;
+    font-size: .83rem;
+    flex: 1;
+    padding: 7px 12px;
+    border: 1.5px solid var(--accent);
+    border-radius: 6px;
+    outline: none;
+    background: #fff;
+    color: var(--ink);
+}
+.btn-confirm-add {
+    font-family: 'DM Sans', sans-serif;
+    font-size: .75rem;
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    transition: background .15s;
+}
+.btn-confirm-add:hover { background: #222d70; }
+.btn-cancel-add {
+    font-family: 'DM Sans', sans-serif;
+    font-size: .75rem;
+    font-weight: 500;
+    padding: 7px 12px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--ink-muted);
+    cursor: pointer;
+}
+
+        /* ── ANIMATIONS ── */
+        @keyframes fadeUp    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideDown { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes spin      { to{transform:rotate(360deg)} }
+        @keyframes blink     { 0%,100%{opacity:1} 50%{opacity:.3} }
+        @keyframes toastIn   { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes toastOut  { to{opacity:0;transform:translateX(20px)} }
+
+        @media (max-width: 768px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { position: static; height: auto; }
+            .main { padding: 20px 16px 60px; }
+        }
+
+
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+    <div class="logo">
+        KK<em>H</em>SOU
+        <span class="logo-tag">ADMIN</span>
+    </div>
+    <nav class="nav">
+        <a href="/library">Library</a>
+        <a href="/admin">General Upload</a>
+        <a href="/books">All Books</a>
+    </nav>
+</header>
+
+<div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-title">Filter Materials</div>
+
+        <div class="fg">
+            <label>Programme</label>
+            <select id="progSel" onchange="onProg()">
+                <option value="">— Choose Programme —</option>
+            </select>
+        </div>
+        <div class="fg">
+            <label>Semester</label>
+            <select id="semSel" onchange="onSem()" disabled>
+                <option value="">— Semester —</option>
+            </select>
+        </div>
+
+        <div class="sidebar-stats" id="sideStats" style="display:none">
+            <div class="sstat">
+                <span class="sstat-label">Total Materials</span>
+                <span class="sstat-val" id="statTotal">—</span>
+            </div>
+            <div class="sstat">
+                <span class="sstat-label">Ready</span>
+                <span class="sstat-val green" id="statReady">—</span>
+            </div>
+            <div class="sstat">
+                <span class="sstat-label">Awaiting Upload</span>
+                <span class="sstat-val amber" id="statPending">—</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+        <div id="stateEmpty" class="empty">
+            <div class="empty-icon">📂</div>
+            <h3>Select a programme and semester</h3>
+            <p>Choose from the sidebar to manage study material uploads</p>
+        </div>
+
+        <div id="stateLoading" class="loading" style="display:none">
+            <div class="spinner"></div>
+            <p>Loading papers…</p>
+        </div>
+
+        <div id="stateResults" style="display:none"></div>
+
+    </main>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+const TYPE_LABELS = {
+    DSC:"Discipline Specific Core", DSE:"Discipline Specific Elective",
+    AEC:"Ability Enhancement Compulsory", VAC:"Value Added Course",
+    GE:"Generic Elective", SEC:"Skill Enhancement Course"
+};
+
+// ── Boot ──────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", async () => {
+    const progs = await api("/api/programmes");
+    const sel   = document.getElementById("progSel");
+    progs.forEach(p => {
+        sel.innerHTML += `<option value="${p.id}" data-code="${p.code}" data-name="${p.name}">${p.code} — ${p.name}</option>`;
+    });
+});
+
+// ── Programme changed ─────────────────────────────────────
+async function onProg() {
+    const progId = document.getElementById("progSel").value;
+    const semSel = document.getElementById("semSel");
+    semSel.innerHTML = '<option value="">— Semester —</option>';
+    semSel.disabled  = true;
+    showState("empty");
+    document.getElementById("sideStats").style.display = "none";
+    if (!progId) return;
+
+    const sems = await api(`/api/semesters/${progId}`);
+    sems.forEach(s => { semSel.innerHTML += `<option value="${s}">Semester ${s}</option>`; });
+    semSel.disabled = false;
+}
+
+// ── Semester changed ──────────────────────────────────────
+async function onSem() {
+    const progId = document.getElementById("progSel").value;
+    const sem    = document.getElementById("semSel").value;
+    if (!progId || !sem) { showState("empty"); return; }
+    showState("loading");
+    const data = await api(`/api/papers/${progId}/${sem}`);
+    render(data);
+    showState("results");
+}
+
+// ── Render ────────────────────────────────────────────────
+function render(data) {
+    const area = document.getElementById("stateResults");
+    area.innerHTML = "";
+
+    // Update sidebar stats
+    const s = data.stats;
+    document.getElementById("statTotal").textContent   = s.total_pdfs;
+    document.getElementById("statReady").textContent   = s.ready_pdfs;
+    document.getElementById("statPending").textContent = s.total_pdfs - s.ready_pdfs;
+    document.getElementById("sideStats").style.display = "flex";
+
+    // Section header
+    area.innerHTML = `
+        <div class="section-hd">
+            <span class="section-prog">${data.programme.code}</span>
+            <span class="section-name">${data.programme.name}</span>
+            <span class="section-badge">SEM ${data.semester}</span>
+        </div>`;
+
+    // Groups
+    let pIdx = 0;
+    data.groups.forEach(grp => {
+        const gEl = document.createElement("div");
+        gEl.className = "tgroup";
+
+        let papersHTML = "";
+        grp.papers.forEach(paper => {
+            pIdx++;
+            const total = paper.pdfs.length;
+            const ready = paper.pdfs.filter(p => p.status === "ready").length;
+            const countClass = ready === total ? "all" : ready === 0 ? "none" : "some";
+            const countLabel = `${ready}/${total} ready`;
+
+            let pdfsHTML = paper.pdfs.map(pdf => {
+                const st = pdf.status;
+                const stLabel = {ready:"Ready", pending:"Awaiting upload", processing:"Processing…", failed:"Failed"}[st] || st;
+                const shortPath = pdf.file_path ? pdf.file_path.split("/").slice(-3).join("/") : "—";
+
+                const actions = st === "ready"
+                    ? `<a href="/flipbook/${encodeURIComponent(pdf.pdf_name)}" target="_blank" class="btn-view">
+                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
+                           View
+                       </a>
+                       <button class="btn-replace" onclick="triggerUpload('${pdf.pdf_name}', '${pdf.id}')">
+                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                           Replace
+                       </button>`
+                    : `<button class="btn-upload" onclick="triggerUpload('${pdf.pdf_name}', '${pdf.id}')">
+                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                           Upload PDF
+                       </button>`;
+
+                return `
+                <div class="pdf-row" id="row-${pdf.pdf_name}">
+                    <div class="pdf-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                    </div>
+                    <div class="pdf-info">
+                        <div class="pdf-title">${pdf.title}</div>
+                        <div class="pdf-path">${shortPath}</div>
+                        <div class="upload-progress" id="prog-${pdf.pdf_name}">
+                            <div class="progress-bar" id="bar-${pdf.pdf_name}"></div>
+                        </div>
+                    </div>
+                    <span class="status-pill ${st}" id="status-${pdf.pdf_name}">
+                        <span class="dot"></span>${stLabel}
+                    </span>
+                    <div class="upload-zone" id="actions-${pdf.pdf_name}">
+                        <input type="file" accept=".pdf" id="file-${pdf.pdf_name}"
+                               onchange="doUpload('${pdf.pdf_name}', '${pdf.id}', this)">
+                        ${actions}
+                    </div>
+                </div>`;
+            }).join("");
+
+papersHTML += `
+            <div class="paper" id="paper-${paper.id}">
+                <div class="paper-hd" onclick="toggle(${paper.id})">
+                    <div class="paper-num">${pIdx}</div>
+                    <div class="paper-name">${paper.paper_name}</div>
+                    <div class="paper-meta">
+                        <span class="ready-count ${countClass}">${countLabel}</span>
+                        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="pdf-list">
+                    ${pdfsHTML}
+                    <div class="add-block-row">
+                        <div class="add-block-form" id="add-form-${paper.id}" style="display:none">
+                            <input type="text" id="add-input-${paper.id}"
+                                   placeholder="e.g. Block 4 — Advanced Topics"
+                                   class="block-input"
+                                   onkeydown="if(event.key==='Enter') confirmAddBlock(${paper.id}); if(event.key==='Escape') cancelAddBlock(${paper.id})">
+                            <button class="btn-confirm-add" onclick="confirmAddBlock(${paper.id})">Add</button>
+                            <button class="btn-cancel-add" onclick="cancelAddBlock(${paper.id})">Cancel</button>
+                        </div>
+                        <button class="btn-add-block" id="add-btn-${paper.id}"
+                                onclick="showAddBlock(${paper.id})">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Add New Block
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        gEl.innerHTML = `
+            <div class="tgroup-hd">
+                <span class="tbadge ${grp.type}">${grp.type}</span>
+                <span class="tgroup-label">${TYPE_LABELS[grp.type] || grp.type}</span>
+                <div class="tgroup-line"></div>
+            </div>
+            ${papersHTML}`;
+        area.appendChild(gEl);
+    });
+}
+
+// ── File upload trigger ───────────────────────────────────
+function triggerUpload(pdfName, pdfId) {
+    document.getElementById(`file-${pdfName}`).click();
+}
+
+// ── Do the actual upload ──────────────────────────────────
+async function doUpload(pdfName, pdfId, input) {
+    if (!input.files[0]) return;
+    const file = input.files[0];
+
+    if (!file.name.endsWith(".pdf")) {
+        toast("Only PDF files are allowed.", "error");
+        return;
+    }
+
+    // Show progress
+    const progEl = document.getElementById(`prog-${pdfName}`);
+    const barEl  = document.getElementById(`bar-${pdfName}`);
+    const statusEl = document.getElementById(`status-${pdfName}`);
+    const actionsEl = document.getElementById(`actions-${pdfName}`);
+
+    progEl.classList.add("show");
+    barEl.style.width = "15%";
+    statusEl.className = "status-pill processing";
+    statusEl.innerHTML = '<span class="dot"></span>Uploading…';
+
+    // Disable all upload buttons in this row
+    actionsEl.querySelectorAll("button").forEach(b => {
+        b.disabled = true;
+        b.classList.add("uploading");
+    });
+
+    const formData = new FormData();
+    formData.append("pdf", file);
+    formData.append("pdf_name", pdfName);
+    formData.append("pdf_id", pdfId);
+
+    try {
+        barEl.style.width = "40%";
+
+        const res  = await fetch("/admin/library/upload", { method: "POST", body: formData });
+        barEl.style.width = "80%";
+
+        const data = await res.json();
+
+        if (!res.ok || data.error) {
+            throw new Error(data.error || "Upload failed");
+        }
+
+        barEl.style.width = "100%";
+        setTimeout(() => {
+            progEl.classList.remove("show");
+            barEl.style.width = "0%";
+        }, 800);
+
+        // Update status pill
+        statusEl.className = "status-pill processing";
+        statusEl.innerHTML = '<span class="dot"></span>Processing…';
+
+        // Update actions area
+        actionsEl.innerHTML = `
+            <input type="file" accept=".pdf" id="file-${pdfName}"
+                   onchange="doUpload('${pdfName}', '${pdfId}', this)">
+            <a href="/flipbook/${encodeURIComponent(pdfName)}" target="_blank" class="btn-view">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
+                View
+            </a>
+            <button class="btn-replace" onclick="triggerUpload('${pdfName}', '${pdfId}')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Replace
+            </button>`;
+
+        toast(`"${file.name}" uploaded. Processing started…`, "success");
+
+        // Poll for ready status
+        pollStatus(pdfName, statusEl);
+
+    } catch (err) {
+        barEl.style.width = "0%";
+        progEl.classList.remove("show");
+        statusEl.className = "status-pill failed";
+        statusEl.innerHTML = '<span class="dot"></span>Failed';
+        actionsEl.querySelectorAll("button").forEach(b => {
+            b.disabled = false;
+            b.classList.remove("uploading");
+        });
+        toast(err.message || "Upload failed. Try again.", "error");
+    }
+
+    input.value = "";
+}
+
+// ── Poll status until ready ───────────────────────────────
+function pollStatus(pdfName, statusEl) {
+    const interval = setInterval(async () => {
+        try {
+            const data = await api(`/api/pdf_status/${pdfName}`);
+            if (data.status === "ready") {
+                clearInterval(interval);
+                statusEl.className = "status-pill ready";
+                statusEl.innerHTML = '<span class="dot"></span>Ready';
+                toast(`"${data.title}" is now ready to read!`, "success");
+                refreshStats();
+            } else if (data.status === "failed") {
+                clearInterval(interval);
+                statusEl.className = "status-pill failed";
+                statusEl.innerHTML = '<span class="dot"></span>Failed';
+            }
+        } catch { clearInterval(interval); }
+    }, 4000);
+}
+
+// ── Refresh sidebar stats ─────────────────────────────────
+async function refreshStats() {
+    const progId = document.getElementById("progSel").value;
+    const sem    = document.getElementById("semSel").value;
+    if (!progId || !sem) return;
+    const data = await api(`/api/papers/${progId}/${sem}`);
+    const s = data.stats;
+    document.getElementById("statTotal").textContent   = s.total_pdfs;
+    document.getElementById("statReady").textContent   = s.ready_pdfs;
+    document.getElementById("statPending").textContent = s.total_pdfs - s.ready_pdfs;
+}
+
+// ── Toggle expand ─────────────────────────────────────────
+function toggle(id) { document.getElementById(`paper-${id}`).classList.toggle("open"); }
+
+// ── State helpers ─────────────────────────────────────────
+function showState(w) {
+    document.getElementById("stateEmpty").style.display   = w==="empty"   ? "block":"none";
+    document.getElementById("stateLoading").style.display = w==="loading" ? "block":"none";
+    document.getElementById("stateResults").style.display = w==="results" ? "block":"none";
+}
+
+// ── Toast ─────────────────────────────────────────────────
+function toast(msg, type="info") {
+    const wrap = document.getElementById("toastWrap");
+    const el   = document.createElement("div");
+    el.className = `toast ${type}`;
+    const icon = {success:"✓", error:"✕", info:"ℹ"}[type] || "•";
+    el.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+    wrap.appendChild(el);
+    setTimeout(() => {
+        el.classList.add("fade-out");
+        setTimeout(() => el.remove(), 300);
+    }, 3500);
+}
+
+// ── API helper ────────────────────────────────────────────
+async function api(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+function showAddBlock(paperId) {
+    document.getElementById(`add-btn-${paperId}`).style.display = "none";
+    document.getElementById(`add-form-${paperId}`).style.display = "flex";
+    document.getElementById(`add-input-${paperId}`).focus();
+}
+
+function cancelAddBlock(paperId) {
+    document.getElementById(`add-btn-${paperId}`).style.display = "inline-flex";
+    document.getElementById(`add-form-${paperId}`).style.display = "none";
+    document.getElementById(`add-input-${paperId}`).value = "";
+}
+
+async function confirmAddBlock(paperId) {
+    const input = document.getElementById(`add-input-${paperId}`);
+    const title = input.value.trim();
+
+    if (!title) { input.focus(); return; }
+
+    try {
+        const res  = await fetch("/api/admin/add_block", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paper_id: paperId, title })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        // Reload the current view to show the new block
+        cancelAddBlock(paperId);
+        await onSem();   // re-fetches and re-renders the whole panel
+        
+        // Auto-open the paper that was just edited
+        setTimeout(() => {
+            const card = document.getElementById(`paper-${paperId}`);
+            if (card && !card.classList.contains("open")) card.classList.add("open");
+        }, 100);
+
+        toast(`"${title}" added successfully!`, "success");
+    } catch (err) {
+        toast(err.message || "Failed to add block.", "error");
+    }
+}
+</script>
+</body>
+</html>

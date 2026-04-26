@@ -276,11 +276,11 @@ function render(data) {
                     </div>
                     <div class="pdf-actions">
                         ${st === 'ready'
-                            ? `<a href="/flipbook/${encodeURIComponent(pdf.pdf_name)}" class="btn btn-primary">
+                            ? `<a href="/flipbook/${pdf.pdf_name}" class="btn btn-primary">
                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
                                    Read
                                </a>
-                               <a href="/summary/${encodeURIComponent(pdf.pdf_name)}" class="btn btn-outline">Summary</a>`
+                               <a href="/summary/${pdf.pdf_name}" class="btn btn-outline">Summary</a>`
                             : `<button class="btn btn-muted" disabled>${st === 'processing' ? 'Processing…' : 'Not yet available'}</button>`
                         }
                     </div>

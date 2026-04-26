@@ -4,6 +4,12 @@ import fitz
 import pytesseract
 import re
 
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from database import update_pdf_status
+
 from PIL import Image
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from celery_app import celery
@@ -505,9 +511,9 @@ def process_book_task(self, pdf_name, pdf_path):
             }, f, ensure_ascii=False, indent=2)
 
         update_status(pdf_name, "ready", 100, "Book processing completed successfully.")
-        
-        from database import update_pdf_status
         update_pdf_status(pdf_name, "ready")
+        
+    
 
         return {
             "success": True,
