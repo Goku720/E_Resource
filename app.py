@@ -14,18 +14,15 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from topic_extractor import extract_topics
 from video_recommender import search_videos
 from library_routes import library_bp
+from config import UPLOAD_FOLDER, SUMMARY_FOLDER, PAGE_TEXT_FOLDER, STATUS_FOLDER, SECRET_KEY
+
 app = Flask(__name__)
 app.register_blueprint(library_bp)
-app.secret_key = "secret"
+app.secret_key = SECRET_KEY
 
 init_students_table()   # creates table if not exists
 
 # ------------------ FOLDERS ------------------
-UPLOAD_FOLDER = r"D:\E_Resource\uploads"
-SUMMARY_FOLDER = "summaries"
-PAGE_TEXT_FOLDER = "page_texts"
-STATUS_FOLDER = "status"
-
 os.makedirs(STATUS_FOLDER, exist_ok=True)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(SUMMARY_FOLDER, exist_ok=True)
@@ -760,21 +757,21 @@ def admin_upload():
     pdf_name = file.filename.replace(".pdf", "")
     pdf_path = os.path.join(UPLOAD_FOLDER, file.filename)
 
-    summary_path = _get_mirrored_path(SUMMARY_FOLDER, pdf_name)
+    summary_path   = _get_mirrored_path(SUMMARY_FOLDER,   pdf_name)
+    page_text_path = _get_mirrored_path(PAGE_TEXT_FOLDER, pdf_name)
+    status_path    = _get_mirrored_path(STATUS_FOLDER,    pdf_name)
 
-    #  flat fallback
-    flat_path    = os.path.join(SUMMARY_FOLDER, f"{pdf_name}.json")
-    if not os.path.exists(summary_path) and os.path.exists(flat_path):
-        summary_path = flat_path
+    # Also try flat fallbacks for files processed before mirrored paths were introduced
+    flat_summary   = os.path.join(SUMMARY_FOLDER,   f"{pdf_name}.json")
+    flat_page_text = os.path.join(PAGE_TEXT_FOLDER, f"{pdf_name}.json")
 
-    page_text_path = os.path.join(PAGE_TEXT_FOLDER, f"{pdf_name}.json")
-    status_path = os.path.join(STATUS_FOLDER, f"{pdf_name}.json")
-
-    if (
-        os.path.exists(summary_path) and
-        os.path.exists(page_text_path) and
+    already_processed = (
+        (os.path.exists(summary_path)   or os.path.exists(flat_summary)) and
+        (os.path.exists(page_text_path) or os.path.exists(flat_page_text)) and
         os.path.exists(pdf_path)
-    ):
+    )
+
+    if already_processed:
         return jsonify({
             "message": "Already processed. Skipping heavy processing.",
             "pdf_name": pdf_name,
@@ -784,7 +781,10 @@ def admin_upload():
     # Save uploaded PDF
     file.save(pdf_path)
 
-    # Initial status file
+    # Initial status — write to mirrored path (same location task will update)
+    status_parent = os.path.dirname(status_path)
+    if status_parent:
+        os.makedirs(status_parent, exist_ok=True)
     with open(status_path, "w", encoding="utf-8") as f:
         json.dump({
             "status": "queued",

@@ -15,10 +15,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from celery_app import celery
 
 # ------------------ FOLDERS ------------------
-UPLOAD_FOLDER = r"D:\E_Resource\uploads"
-SUMMARY_FOLDER = "summaries"
-PAGE_TEXT_FOLDER = "page_texts"
-STATUS_FOLDER = "status"
+from config import UPLOAD_FOLDER, SUMMARY_FOLDER, PAGE_TEXT_FOLDER, STATUS_FOLDER
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(SUMMARY_FOLDER, exist_ok=True)
@@ -34,6 +31,32 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
 # =========================================================
+# PATH HELPERS
+# =========================================================
+def _mirrored_json_path(base_folder, pdf_path, pdf_name):
+    """
+    Returns a mirrored JSON path under base_folder that matches
+    the upload subfolder structure.
+
+    e.g. uploads/BCA/Semester_1/Intro.../BCA_S1_P11_Block1.pdf
+      ->  summaries/BCA/Semester_1/Intro.../BCA_S1_P11_Block1.json
+
+    Falls back to flat base_folder/pdf_name.json when pdf_path is
+    absent or on a different Windows drive.
+    """
+    if pdf_path:
+        try:
+            rel      = os.path.relpath(pdf_path, UPLOAD_FOLDER)
+            # Guard against paths that escape the uploads root (e.g. "../../x")
+            if not rel.startswith(".."):
+                rel_json = os.path.splitext(rel)[0] + ".json"
+                return os.path.join(base_folder, rel_json)
+        except ValueError:
+            pass   # different Windows drives
+    return os.path.join(base_folder, f"{pdf_name}.json")
+
+
+# =========================================================
 # STATUS HELPERS
 # =========================================================
 def update_status(pdf_name, status, progress=0, message="", pdf_path=None):
@@ -43,18 +66,9 @@ def update_status(pdf_name, status, progress=0, message="", pdf_path=None):
       ->   status/MAS/Semester_1/History.../Block1.json
     Falls back to flat status/pdf_name.json if pdf_path not given.
     """
-    if pdf_path:
-        try:
-            rel      = os.path.relpath(pdf_path, UPLOAD_FOLDER)
-            rel_json = os.path.splitext(rel)[0] + ".json"
-            path     = os.path.join(STATUS_FOLDER, rel_json)
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-        except ValueError:
-            # relpath fails if on different Windows drives
-            path = os.path.join(STATUS_FOLDER, f"{pdf_name}.json")
-    else:
-        path = os.path.join(STATUS_FOLDER, f"{pdf_name}.json")
- 
+    path = _mirrored_json_path(STATUS_FOLDER, pdf_path, pdf_name)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
     with open(path, "w", encoding="utf-8") as f:
         json.dump({
             "status":   status,
@@ -457,18 +471,13 @@ def build_smart_summary(section_title, text):
 def process_book_task(self, pdf_name, pdf_path):
     try:
         # ── Build mirrored subfolder paths ──────────────────
-        try:
-            rel           = os.path.relpath(pdf_path, UPLOAD_FOLDER)
-            rel_json      = os.path.splitext(rel)[0] + ".json"
-        except ValueError:
-            # Different Windows drives — fall back to flat name
-            rel_json      = f"{pdf_name}.json"
- 
-        summary_path   = os.path.join(SUMMARY_FOLDER,   rel_json)
-        page_text_path = os.path.join(PAGE_TEXT_FOLDER, rel_json)
- 
-        os.makedirs(os.path.dirname(summary_path),   exist_ok=True)
-        os.makedirs(os.path.dirname(page_text_path), exist_ok=True)
+        summary_path   = _mirrored_json_path(SUMMARY_FOLDER,   pdf_path, pdf_name)
+        page_text_path = _mirrored_json_path(PAGE_TEXT_FOLDER, pdf_path, pdf_name)
+
+        for p in [summary_path, page_text_path]:
+            parent = os.path.dirname(p)
+            if parent:
+                os.makedirs(parent, exist_ok=True)
         # ────────────────────────────────────────────────────
  
         update_status(pdf_name, "extracting", 10, "Extracting text from PDF...", pdf_path)

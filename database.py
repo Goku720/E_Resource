@@ -5,8 +5,7 @@
 
 import sqlite3
 import os
-
-DB_PATH = "library.db"
+from config import DB_PATH
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)

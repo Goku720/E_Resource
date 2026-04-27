@@ -12,6 +12,7 @@ from database import (
     get_db
 )
 from tasks import process_book_task
+from config import build_upload_path
  
 library_bp = Blueprint("library", __name__)
  
@@ -188,13 +189,7 @@ def add_block():
     safe_title = title.replace(" ", "_").replace("/", "-")[:40]
     pdf_name   = f"{paper['code']}_S{paper['semester']}_P{paper_id}_Block{block_num}_{safe_title}"
  
-    folder = os.path.join(
-        "uploads",
-        paper["code"],
-        f"Semester_{paper['semester']}",
-        paper["paper_name"].replace(" ", "_").replace("/", "-")[:50]
-    )
-    file_path = os.path.join(folder, f"{pdf_name}.pdf")
+    file_path = build_upload_path(paper["code"], paper["semester"], paper["paper_name"], pdf_name)
  
     conn.execute("""
         INSERT INTO pdfs (paper_id, title, pdf_name, file_path, status)
