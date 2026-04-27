@@ -141,6 +141,29 @@
             .pdf-row{padding-left:16px;flex-wrap:wrap}
             .stats{flex-wrap:wrap}
         }
+
+        /* ── MOBILE NAV ── */
+        .hamburger{display:none;background:none;border:none;cursor:pointer;color:rgba(255,255,255,.75);padding:6px;flex-direction:column;gap:5px;align-items:center}
+        .hamburger span{display:block;width:22px;height:2px;background:currentColor;border-radius:2px}
+        .mobile-nav-drawer{display:none;position:fixed;inset:0;z-index:300}
+        .mobile-nav-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+        .mobile-nav-panel{position:absolute;top:0;right:0;width:min(280px,85vw);height:100%;background:var(--ink);border-left:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,.4);overflow-y:auto}
+        .mobile-nav-header{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+        .mobile-nav-user{display:flex;align-items:center;gap:10px}
+        .mobile-nav-user-dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+        .mobile-nav-name{color:rgba(255,255,255,.75);font-size:.88rem;font-weight:500}
+        .mobile-nav-close{background:rgba(255,255,255,.08);border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;color:rgba(255,255,255,.6);font-size:18px;display:flex;align-items:center;justify-content:center}
+        .mobile-nav-links{padding:12px 0;flex:1}
+        .mobile-nav-links a{display:block;padding:13px 20px;color:rgba(255,255,255,.55);text-decoration:none;font-size:.9rem;font-weight:500;border-left:3px solid transparent;transition:all .15s}
+        .mobile-nav-links a:hover{color:#fff;background:rgba(255,255,255,.05)}
+        .mobile-nav-links a.active{color:#fff;border-left-color:var(--gold);background:rgba(255,255,255,.06)}
+        .mobile-nav-links a.logout{color:rgba(255,100,100,.7);margin-top:8px}
+        .mobile-nav-drawer.open{display:block}
+
+        @media(max-width:640px){
+            .hamburger{display:flex}
+            .nav{display:none}
+        }
     </style>
 </head>
 <body>
@@ -148,17 +171,36 @@
 <header class="header">
     <div class="logo">KK<em>H</em>SOU</div>
     <nav class="nav">
-        <div class="nav-user">
-            <div class="nav-user-dot"></div>
-            <span id="navName">Student</span>
-        </div>
+        <div class="nav-user"><div class="nav-user-dot"></div><span id="navName">Student</span></div>
         <div class="nav-divider"></div>
-        <a href="/my-courses">My Courses</a>
-        <a href="/library" class="active">All Courses</a>
+        <a href="/my-courses" class="active">My Courses</a>
+        <a href="/library">All Courses</a>
         <a href="/books">All Books</a>
         <a href="/logout">Log Out</a>
     </nav>
+    <button class="hamburger" onclick="openMobileNav()" aria-label="Open menu">
+        <span></span><span></span><span></span>
+    </button>
 </header>
+
+<div class="mobile-nav-drawer" id="mobileNavDrawer">
+    <div class="mobile-nav-overlay" onclick="closeMobileNav()"></div>
+    <div class="mobile-nav-panel">
+        <div class="mobile-nav-header">
+            <div class="mobile-nav-user">
+                <div class="mobile-nav-user-dot"></div>
+                <span class="mobile-nav-name" id="mobileNavName">Student</span>
+            </div>
+            <button class="mobile-nav-close" onclick="closeMobileNav()">✕</button>
+        </div>
+        <div class="mobile-nav-links">
+            <a href="/my-courses" class="active">My Courses</a>
+            <a href="/library">All Courses</a>
+            <a href="/books">All Books</a>
+            <a href="/logout" class="logout">Log Out</a>
+        </div>
+    </div>
+</div>
 
 <div class="hero">
     <div class="hero-eyebrow">Student Dashboard</div>
@@ -339,8 +381,7 @@ function renderContent(data) {
                             ? `<a href="/flipbook/${encodeURIComponent(pdf.pdf_name)}" class="btn btn-primary">
                                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
                                    Read
-                               </a>
-                               <a href="/summary/${encodeURIComponent(pdf.pdf_name)}" class="btn btn-outline">Summary</a>`
+                               </a>`
                             : `<button class="btn btn-muted" disabled>Not available</button>`
                         }
                     </div>
@@ -391,6 +432,23 @@ async function apiFetch(url) {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
+}
+
+
+function openMobileNav() {
+    document.getElementById("mobileNavDrawer").classList.add("open");
+    document.body.style.overflow = "hidden";
+}
+function closeMobileNav() {
+    document.getElementById("mobileNavDrawer").classList.remove("open");
+    document.body.style.overflow = "";
+}
+// Keep mobile name in sync with desktop navName
+const _dn = document.getElementById("navName");
+const _mn = document.getElementById("mobileNavName");
+if (_dn && _mn) {
+    new MutationObserver(() => _mn.textContent = _dn.textContent)
+        .observe(_dn, { childList: true, characterData: true, subtree: true });
 }
 </script>
 </body>
