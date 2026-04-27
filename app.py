@@ -8,6 +8,8 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from tasks import process_book_task
 from database import fetch_pdf_by_name
 
+from database import fetch_pdf_by_name, get_student, init_students_table
+
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from topic_extractor import extract_topics
 from video_recommender import search_videos
@@ -15,6 +17,8 @@ from library_routes import library_bp
 app = Flask(__name__)
 app.register_blueprint(library_bp)
 app.secret_key = "secret"
+
+init_students_table()   # creates table if not exists
 
 # ------------------ FOLDERS ------------------
 UPLOAD_FOLDER = r"D:\E_Resource\uploads"
@@ -1103,15 +1107,25 @@ def preview(pdf_name):
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
- 
-        if username == "student" and password == "123":
-            session["user"] = username
-            return redirect("/library")   # ← send to library instead of books
- 
+        username = request.form["username"].strip()
+        password = request.form["password"].strip()
+
+        student = get_student(username)
+
+        if student and student["password"] == password:
+            is_admin = student["programme_id"] is None
+
+            session["user"]         = username
+            session["full_name"]    = student["full_name"]
+            session["programme_id"] = student["programme_id"]
+            session["semester"]     = student["semester"]
+            session["is_admin"]     = is_admin
+
+            # Admins go straight to library, students go to my-courses
+            return redirect("/library" if is_admin else "/my-courses")
+
         return render_template("login.html", error="Invalid username or password.")
- 
+
     return render_template("login.html", error=None)
  
 
@@ -1119,6 +1133,36 @@ def login():
 def logout():
     session.pop("user", None)
     return redirect(url_for("login"))
+
+
+@app.route("/my-courses")
+def my_courses():
+    if "user" not in session:
+        return redirect(url_for("login"))
+    # Admins shouldn't be here
+    if session.get("is_admin"):
+        return redirect("/library")
+    return render_template("my_courses.html")
+
+
+@app.route("/api/my-info")
+def api_my_info():
+    if "user" not in session:
+        return jsonify({"error": "not logged in"}), 401
+
+    from database import fetch_programme_by_id
+    prog_id   = session.get("programme_id")   # None for admin
+    programme = fetch_programme_by_id(prog_id) if prog_id else None
+
+    return jsonify({
+        "username":     session.get("user"),
+        "full_name":    session.get("full_name", "Student"),
+        "programme_id": prog_id,
+        "semester":     session.get("semester"),
+        "is_admin":     session.get("is_admin", False),
+        "programme":    programme
+    })
+
 
 # =========================================================
 # BOOKS

@@ -44,15 +44,13 @@
             color: #fff; font-size: 1.15rem; letter-spacing: .04em;
         }
         .logo em { color: var(--gold); font-style: normal; }
-        .nav { display: flex; align-items: center; gap: 8px; }
-        .nav a {
-            color: rgba(255,255,255,.5);
-            text-decoration: none; font-size: .75rem;
-            font-weight: 500; letter-spacing: .08em;
-            text-transform: uppercase; padding: 6px 14px;
-            border-radius: 6px; transition: all .2s;
-        }
-        .nav a:hover { color: var(--gold); }
+        .nav{display:flex;align-items:center;gap:8px}
+        .nav a{color:rgba(255,255,255,.5);text-decoration:none;font-size:.75rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:6px;transition:all .2s}
+        .nav a:hover{color:var(--gold)}
+        .nav a.active{color:#fff;background:rgba(255,255,255,.1)}
+        .nav-divider{width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 4px}
+        .nav-user{color:rgba(255,255,255,.6);font-size:.8rem;display:flex;align-items:center;gap:6px}
+        .nav-user-dot{width:7px;height:7px;border-radius:50%;background:var(--gold)}
         .nav a.btn-nav {
             background: rgba(255,255,255,.08);
             color: rgba(255,255,255,.7);
@@ -338,9 +336,15 @@
 <header class="header">
     <div class="logo">KK<em>H</em>SOU</div>
     <nav class="nav">
-        <span class="nav-user">👤 Student</span>
-        <a href="/library" class="btn-nav">Course Library</a>
-        <a href="/logout" class="btn-nav">Log Out</a>
+        <div class="nav-user">
+            <div class="nav-user-dot"></div>
+            <span id="navName">Student</span>
+        </div>
+        <div class="nav-divider"></div>
+        <a href="/my-courses">My Courses</a>
+        <a href="/library" class="active">All Courses</a>
+        <a href="/books">All Books</a>
+        <a href="/logout">Log Out</a>
     </nav>
 </header>
 

@@ -24,9 +24,13 @@
         .header{background:var(--ink);height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 40px;position:sticky;top:0;z-index:200;border-bottom:3px solid var(--gold)}
         .logo{font-family:'Playfair Display',serif;color:#fff;font-size:1.15rem;letter-spacing:.04em}
         .logo em{color:var(--gold);font-style:normal}
-        .nav{display:flex;gap:24px;align-items:center}
-        .nav a{color:rgba(255,255,255,.55);text-decoration:none;font-size:.78rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;transition:color .2s}
-        .nav a:hover,.nav a.active{color:var(--gold)}
+        .nav{display:flex;align-items:center;gap:8px}
+        .nav a{color:rgba(255,255,255,.5);text-decoration:none;font-size:.75rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:6px;transition:all .2s}
+        .nav a:hover{color:var(--gold)}
+        .nav a.active{color:#fff;background:rgba(255,255,255,.1)}
+        .nav-divider{width:1px;height:20px;background:rgba(255,255,255,.1);margin:0 4px}
+        .nav-user{color:rgba(255,255,255,.6);font-size:.8rem;display:flex;align-items:center;gap:6px}
+        .nav-user-dot{width:7px;height:7px;border-radius:50%;background:var(--gold)}
 
         /* HERO */
         .hero{background:var(--accent);padding:52px 40px 44px;position:relative;overflow:hidden}
@@ -145,8 +149,14 @@
 <header class="header">
     <div class="logo">KK<em>H</em>SOU</div>
     <nav class="nav">
+        <div class="nav-user">
+            <div class="nav-user-dot"></div>
+            <span id="navName">Student</span>
+        </div>
+        <div class="nav-divider"></div>
+        <a href="/my-courses">My Courses</a>
+        <a href="/library" class="active">All Courses</a>
         <a href="/books">All Books</a>
-        <a href="/library" class="active">Course Library</a>
         <a href="/logout">Log Out</a>
     </nav>
 </header>
@@ -200,6 +210,13 @@ const TYPE_LABELS = {
 };
 
 window.addEventListener("DOMContentLoaded", async () => {
+
+    try {
+        const info = await apiFetch("/api/my-info");
+        document.getElementById("navName").textContent = info.full_name;
+    } catch(e) {}
+
+    
     const progs = await apiFetch("/api/programmes");
     const sel = document.getElementById("progSel");
     progs.forEach(p => {

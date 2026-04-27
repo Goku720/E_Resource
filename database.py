@@ -110,5 +110,54 @@ def update_pdf_status(pdf_name, status):
     conn.commit()
     conn.close()
 
+
+# ── Student accounts table ────────────────────────────────────
+
+def init_students_table():
+    conn = get_db()
+    conn.execute("PRAGMA foreign_keys = OFF")   # allow NULL programme_id for admin
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS students (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            username     TEXT UNIQUE NOT NULL,
+            password     TEXT NOT NULL,
+            full_name    TEXT NOT NULL,
+            programme_id INTEGER,               -- NULL means admin (sees everything)
+            semester     INTEGER,               -- NULL means admin
+            created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.commit()
+    conn.close()
+
+
+def get_student(username):
+    conn = get_db()
+    row  = conn.execute(
+        "SELECT * FROM students WHERE username = ?", (username,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def add_student(username, password, full_name, programme_id, semester):
+    conn = get_db()
+    try:
+        conn.execute(
+            """INSERT INTO students (username, password, full_name, programme_id, semester)
+               VALUES (?, ?, ?, ?, ?)""",
+            (username, password, full_name, programme_id, semester)
+        )
+        conn.commit()
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+
+
+
 if __name__ == "__main__":
     init_db()
