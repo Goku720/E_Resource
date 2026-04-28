@@ -11,8 +11,14 @@ UPLOAD_FOLDER    = os.environ.get("UPLOAD_FOLDER",    "uploads")
 SUMMARY_FOLDER   = os.environ.get("SUMMARY_FOLDER",   "summaries")
 PAGE_TEXT_FOLDER = os.environ.get("PAGE_TEXT_FOLDER", "page_texts")
 STATUS_FOLDER    = os.environ.get("STATUS_FOLDER",    "status")
-DB_PATH          = os.environ.get("DB_PATH",           "library.db")
 SECRET_KEY       = os.environ.get("SECRET_KEY",        "dev-secret-key")
+
+# ── MySQL connection ─────────────────────────────────────────
+MYSQL_HOST     = os.environ.get("MYSQL_HOST",     "localhost")
+MYSQL_PORT     = int(os.environ.get("MYSQL_PORT", 3306))
+MYSQL_USER     = os.environ.get("MYSQL_USER",     "root")
+MYSQL_PASSWORD = os.environ.get("MYSQL_PASSWORD", "")
+MYSQL_DB       = os.environ.get("MYSQL_DB",       "library_db")
 
 # ── Derived helpers ──────────────────────────────────────────
 

@@ -22,28 +22,26 @@ def seed():
     ]
 
     conn = get_db()
+    with conn.cursor() as cur:
+        # Admin — NULL programme_id (no FK constraint issue in MySQL with NULL)
+        cur.execute("""
+            INSERT IGNORE INTO students (username, password, full_name, programme_id, semester)
+            VALUES (%s, %s, %s, NULL, NULL)
+        """, ("admin", "admin123", "Admin User"))
+        conn.commit()
+        print("  ✓ admin (no programme — redirects to /library on login)")
 
-    # Admin uses NULL programme_id — disable FK check just for this insert
-    conn.execute("PRAGMA foreign_keys = OFF")
-    conn.execute("""
-        INSERT OR IGNORE INTO students (username, password, full_name, programme_id, semester)
-        VALUES (?, ?, ?, NULL, NULL)
-    """, ("admin", "admin123", "Admin User"))
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.commit()
-    print("  ✓ admin (no programme — redirects to /library on login)")
-
-    # Regular students
-    for username, password, full_name, prog_id, semester in STUDENTS:
-        try:
-            conn.execute("""
-                INSERT OR IGNORE INTO students (username, password, full_name, programme_id, semester)
-                VALUES (?, ?, ?, ?, ?)
-            """, (username, password, full_name, prog_id, semester))
-            conn.commit()
-            print(f"  ✓ {username} → programme_id={prog_id}, sem={semester}")
-        except Exception as e:
-            print(f"  ⚠ {username} skipped: {e}")
+        # Regular students
+        for username, password, full_name, prog_id, semester in STUDENTS:
+            try:
+                cur.execute("""
+                    INSERT IGNORE INTO students (username, password, full_name, programme_id, semester)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (username, password, full_name, prog_id, semester))
+                conn.commit()
+                print(f"  ✓ {username} → programme_id={prog_id}, sem={semester}")
+            except Exception as e:
+                print(f"  ⚠ {username} skipped: {e}")
 
     conn.close()
     print("\n✅ Done! Login credentials:")
