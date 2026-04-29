@@ -332,6 +332,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 </header>
 
 <div id="pvBanner">Preview Mode — Login to read the full book</div>
+<div id="guestBanner" style="display:none;position:fixed;top:calc(var(--top)+8px);left:0;right:0;z-index:600;background:rgba(15,23,42,0.92);border-bottom:1px solid var(--bdr);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+  <span style="font-size:13px;color:#fbbf24;font-weight:600;">📖 Guest Preview — Showing page 1–2 of <span id="guestTot">?</span>. <a href="/login" style="color:#a5b4fc;text-decoration:underline;">Sign in</a> to read all pages &amp; unlock AI features.</span>
+</div>
 
 <!-- PDF STAGE -->
 <div id="stage">
@@ -414,6 +417,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc=
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
 const previewMode=JSON.parse('{{ preview | tojson | safe }}');
+const guestMode=JSON.parse('{{ guest | tojson | safe }}');
+const GUEST_PAGE_LIMIT = 2;
 const pdfName = "{{ pdf_name }}";   // for AI APIs
 const filePath = "{{ file_path }}"; // for PDF loading
 
@@ -436,7 +441,11 @@ fetch(`/summary_json/${pdfName}`).then(r=>r.json())
 pdfjsLib.getDocument(`/pdf/${filePath}`).promise.then(doc=>{
   pdfDoc=doc; total=doc.numPages;
   ["pgTot","pgN"].forEach(id=>document.getElementById(id).textContent=total);
-  document.getElementById("pgInput").max=total;
+  document.getElementById("pgInput").max=guestMode ? GUEST_PAGE_LIMIT : total;
+  if(guestMode){
+    document.getElementById("guestBanner").style.display="flex";
+    document.getElementById("guestTot").textContent=total;
+  }
   renderPage(pg);
 }).catch(e=>console.error(e));
 
@@ -456,6 +465,10 @@ async function renderPage(n, speakAfter = false){
   if(previewMode&&n>3){
     alert("Preview limit. Login to continue.");
     window.location.href="/login";
+    return;
+  }
+  if(guestMode && n > GUEST_PAGE_LIMIT){
+    showGuestWall();
     return;
   }
   if(!pdfDoc) return;
@@ -532,7 +545,7 @@ async function renderPage(n, speakAfter = false){
   document.getElementById("pgTop").textContent = n;
   document.getElementById("pgInput").value = n;
   document.getElementById("btnPrev").disabled = n <= 1;
-  document.getElementById("btnNext").disabled = n >= total;
+  document.getElementById("btnNext").disabled = n >= total || (guestMode && n >= GUEST_PAGE_LIMIT);
   document.getElementById("zlabel").textContent = Math.round(zoom * 100) + "%";
 
   if(zoom <= 1.05){
@@ -549,6 +562,7 @@ async function renderPage(n, speakAfter = false){
 /* ── NAV ── */
 function nextPage(){
   if(pdfDoc && pg < total){
+    if(guestMode && pg >= GUEST_PAGE_LIMIT){ showGuestWall(); return; }
     stage.scrollTop = 0;
     stage.scrollLeft = 0;
     renderPage(pg + 1, true); // true = auto-speak if TTS active
@@ -565,6 +579,7 @@ function prevPage(){
 
 function jumpPage(v){
   const n = parseInt(v);
+  if(guestMode && n > GUEST_PAGE_LIMIT){ showGuestWall(); document.getElementById("pgInput").value=pg; return; }
   if(!isNaN(n) && n >= 1 && n <= total) renderPage(n, true);
 }
 function zoomIn(){zoom=Math.min(zoom+0.25,4);renderPage(pg);}
@@ -648,7 +663,45 @@ document.addEventListener("keydown",e=>{
 });
 window.addEventListener("resize",()=>{clearTimeout(rTimer);rTimer=setTimeout(()=>{if(pdfDoc)renderPage(pg);},150);});
 
-/* ── DRAWER ── */
+/* ── GUEST WALL ── */
+function showGuestWall(){
+  openModal("Sign In to Continue Reading",`
+    <div style="text-align:center;padding:10px 0 6px;">
+      <div style="font-size:48px;margin-bottom:14px;">🔒</div>
+      <p style="font-size:15px;font-weight:600;color:var(--white);margin-bottom:8px;">
+        You've reached the guest preview limit.
+      </p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6;">
+        This book has <strong style="color:var(--white)">${total} pages</strong>.
+        Sign in with your student account to read all pages and unlock AI features like
+        Study Helper, Ask Book, Videos, and Read Aloud.
+      </p>
+      <a href="/login" style="display:inline-block;padding:12px 28px;background:var(--acc);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;letter-spacing:.02em;">
+        Sign In
+      </a>
+      <p style="font-size:12px;color:var(--muted);margin-top:16px;">
+        Don't have an account? Contact your programme coordinator.
+      </p>
+    </div>
+  `);
+}
+
+function guestBlock(){
+  openModal("Feature Locked",`
+    <div style="text-align:center;padding:10px 0 6px;">
+      <div style="font-size:40px;margin-bottom:12px;">✦</div>
+      <p style="font-size:15px;font-weight:600;color:var(--white);margin-bottom:8px;">AI Tools require sign-in</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">
+        Study Helper, Ask Book, Videos, and Read Aloud are available to registered students.
+      </p>
+      <a href="/login" style="display:inline-block;padding:11px 26px;background:var(--acc);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">
+        Sign In to Unlock
+      </a>
+    </div>
+  `);
+}
+
+
 function toggleDrawer(){
   document.getElementById("aiDrawer").classList.toggle("on");
   document.getElementById("overlay").classList.toggle("on");
@@ -676,6 +729,7 @@ function listH(arr){if(!arr?.length) return"<p style='color:var(--muted)'>No dat
 
 /* ── STUDY HELPER ── */
 function showSummary(){
+  if(guestMode){cd();guestBlock();return;}
   if(previewMode){alert("Login required.");return;}
   if(!sumLoaded){alert("Summaries loading…");return;}
   openModal(`Study Helper — Page ${pg}`,"<p class='loading-txt'>Analysing page…</p>");
@@ -717,6 +771,7 @@ function showCat(c){
 
 /* ── ASK BOOK ── */
 function openAskBook(){
+  if(guestMode){cd();guestBlock();return;}
   if(previewMode){alert("Login required.");return;}
   openModal("Ask This Book",`
     <div class="chips"><span class="chip">Page ${pg}</span><span class="chip">Book-aware AI</span></div>
@@ -829,6 +884,7 @@ function getYTId(url){
 
 
 function getVideos(){
+  if(guestMode){cd();guestBlock();return;}
   if(previewMode){alert("Login required.");return;}
   const vp=document.getElementById("vp");
   document.getElementById("vptitle").textContent=`Videos — Page ${pg}`;
@@ -915,6 +971,11 @@ function doGoto(n){
   const target = n ?? parseInt(document.getElementById("gotoInput")?.value);
   if(isNaN(target) || target < 1 || target > total){
     announce(`Please enter a page between 1 and ${total}`);
+    return;
+  }
+  if(guestMode && target > GUEST_PAGE_LIMIT){
+    closeModal();
+    showGuestWall();
     return;
   }
   closeModal();
@@ -1031,6 +1092,7 @@ function pauseTTS() {
 }
 
 function toggleTTS() {
+  if(guestMode){guestBlock();return;}
   if (ttsActive) { stopTTS(); } else { startTTS(pg); }
 }
 
@@ -1059,6 +1121,7 @@ document.addEventListener("keydown", e => {
 
 /* ── TTS SETTINGS PANEL (in modal) ── */
 function openTTSPanel() {
+  if(guestMode){cd();guestBlock();return;}
   loadVoices();
   const voiceOpts = voices.map((v, i) =>
     `<option value="${i}" ${v === ttsVoice ? "selected" : ""}>${v.name} (${v.lang})</option>`

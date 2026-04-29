@@ -33,8 +33,7 @@ TYPE_ORDER = ["DSC", "DSE", "AEC", "VAC", "GE", "SEC"]
 
 @library_bp.route("/library")
 def library():
-    if "user" not in session:
-        return redirect(url_for("login"))
+    # Guests can browse — no login required
     return render_template("library.html")
 
 

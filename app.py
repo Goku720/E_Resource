@@ -694,9 +694,7 @@ def confidence_label(score):
 # =========================================================
 @app.route("/pdf/<path:pdf_name>")
 def serve_pdf(pdf_name):
-    if "user" not in session:
-        return redirect(url_for("login"))
-    # Look up the actual file path from the database
+    # PDF serving allowed for guests too — page limit enforced in the viewer
     pdf_row = fetch_pdf_by_name(pdf_name)
     if not pdf_row:
         return f"PDF not found in database: {pdf_name}", 404
@@ -1081,24 +1079,23 @@ def processing_status(pdf_name):
 # =========================================================
 @app.route("/flipbook/<pdf_name>")        # ← no longer <path:>, pdf_name is a flat key
 def flipbook_view(pdf_name):
-    if "user" not in session:
-        return redirect(url_for("login"))
-
+    is_guest = "user" not in session
     return render_template(
         "flipbook.html",
         pdf_name=pdf_name,
         file_path=pdf_name,              # ← same value; serve_pdf will DB-lookup the real path
-        preview=False
+        preview=False,
+        guest=is_guest
     )
 @app.route("/preview/<path:pdf_name>")
 def preview(pdf_name):
     file_path = f"{pdf_name}.pdf"
-
     return render_template(
         "flipbook.html",
         pdf_name=pdf_name,
         file_path=file_path,
-        preview=True
+        preview=True,
+        guest=False
     )
 
 # =========================================================
