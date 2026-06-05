@@ -289,7 +289,7 @@
 <div class="right">
     <div class="form-box">
         <div class="form-title">Welcome back</div>
-        <div class="form-sub">Sign in to access your study materials</div>
+        <div class="form-sub">Sign in with your registered mobile number</div>
 
         {% if error %}
         <div class="error-banner">
@@ -302,9 +302,9 @@
 
         <form method="POST" onsubmit="onSubmit(this)">
             <div class="field">
-                <label>Username</label>
-                <input type="text" name="username" placeholder="Enter your username"
-                       autocomplete="username" required>
+                <label>Mobile Number / Username</label>
+                <input type="text" name="username" placeholder="Enter mobile no. or admin username"
+                       autocomplete="username" inputmode="numeric" required>
             </div>
             <div class="field">
                 <label>Password</label>

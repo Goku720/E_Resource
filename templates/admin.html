@@ -77,6 +77,76 @@
             transition: color .2s;
         }
         .nav a:hover { color: var(--gold); }
+        .nav a.logout {
+            color: rgba(255,100,100,.6);
+            border: 1px solid rgba(255,100,100,.25);
+            padding: 5px 14px;
+            border-radius: 6px;
+            transition: color .2s, border-color .2s, background .2s;
+        }
+        .nav a.logout:hover {
+            color: #ff6464;
+            border-color: rgba(255,100,100,.6);
+            background: rgba(255,100,100,.08);
+        }
+
+        /* ── HAMBURGER ── */
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: rgba(255,255,255,.75);
+            padding: 6px;
+            flex-direction: column;
+            gap: 5px;
+            align-items: center;
+        }
+        .hamburger span {
+            display: block;
+            width: 22px;
+            height: 2px;
+            background: currentColor;
+            border-radius: 2px;
+        }
+
+        /* ── MOBILE DRAWER ── */
+        .mobile-nav-drawer { display: none; position: fixed; inset: 0; z-index: 300; }
+        .mobile-nav-drawer.open { display: block; }
+        .mobile-nav-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+        .mobile-nav-panel {
+            position: absolute; top: 0; right: 0;
+            width: min(280px, 85vw); height: 100%;
+            background: var(--ink);
+            border-left: 1px solid rgba(255,255,255,.08);
+            display: flex; flex-direction: column;
+            box-shadow: -8px 0 32px rgba(0,0,0,.4);
+            overflow-y: auto;
+        }
+        .mobile-nav-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+        }
+        .mobile-nav-user { display: flex; align-items: center; gap: 10px; }
+        .mobile-nav-user-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+        .mobile-nav-name { color: rgba(255,255,255,.75); font-size: .88rem; font-weight: 500; }
+        .mobile-nav-close {
+            background: rgba(255,255,255,.08); border: none; border-radius: 50%;
+            width: 32px; height: 32px; cursor: pointer;
+            color: rgba(255,255,255,.6); font-size: 18px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .mobile-nav-links { padding: 12px 0; flex: 1; }
+        .mobile-nav-links a {
+            display: block; padding: 13px 20px;
+            color: rgba(255,255,255,.55); text-decoration: none;
+            font-size: .9rem; font-weight: 500;
+            border-left: 3px solid transparent;
+            transition: all .15s;
+        }
+        .mobile-nav-links a:hover { color: #fff; background: rgba(255,255,255,.05); }
+        .mobile-nav-links a.logout { color: rgba(255,100,100,.7); margin-top: 8px; }
 
         /* ── LAYOUT ── */
         .layout {
@@ -611,6 +681,36 @@
 }
 
 
+        /* ── SECTION BANNERS — Major / Minor ── */
+        .section-banner {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px;
+            border-radius: var(--radius);
+            margin: 28px 0 12px;
+        }
+        .section-banner.major {
+            background: var(--accent-lt);
+            border: 1.5px solid #c5caf0;
+        }
+        .section-banner.minor {
+            background: var(--green-lt);
+            border: 1.5px solid #b0d9bf;
+        }
+        .section-banner-icon { font-size: .95rem; }
+        .section-banner-title {
+            font-family: 'Playfair Display', serif;
+            font-size: .92rem;
+            color: var(--ink);
+            flex: 1;
+        }
+        .section-banner-tag {
+            font-size: .6rem; font-weight: 700;
+            letter-spacing: .1em; text-transform: uppercase;
+            padding: 3px 9px; border-radius: 20px; color: #fff;
+        }
+        .section-banner.major .section-banner-tag { background: var(--accent); }
+        .section-banner.minor .section-banner-tag { background: var(--green); }
+
         /* ── ANIMATIONS ── */
         @keyframes fadeUp    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
         @keyframes slideDown { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
@@ -623,6 +723,8 @@
             .layout { grid-template-columns: 1fr; }
             .sidebar { position: static; height: auto; }
             .main { padding: 20px 16px 60px; }
+            .hamburger { display: flex; }
+            .nav { display: none; }
         }
 
 
@@ -639,9 +741,31 @@
     <nav class="nav">
         <!-- <a href="/library">Library</a> -->
         <a href="/admin">General Upload</a>
-        <!-- <a href="/books">All Books</a> -->
+        <a href="/logout" class="logout">Log Out</a>
     </nav>
+    <button class="hamburger" onclick="openMobileNav()" aria-label="Open menu">
+        <span></span><span></span><span></span>
+    </button>
 </header>
+
+<!-- MOBILE NAV DRAWER -->
+<div class="mobile-nav-drawer" id="mobileNavDrawer">
+    <div class="mobile-nav-overlay" onclick="closeMobileNav()"></div>
+    <div class="mobile-nav-panel">
+        <div class="mobile-nav-header">
+            <div class="mobile-nav-user">
+                <div class="mobile-nav-user-dot"></div>
+                <span class="mobile-nav-name">Admin</span>
+            </div>
+            <button class="mobile-nav-close" onclick="closeMobileNav()">✕</button>
+        </div>
+        <div class="mobile-nav-links">
+            <!-- <a href="/library">Library</a> -->
+            <a href="/admin">General Upload</a>
+            <a href="/logout" class="logout">Log Out</a>
+        </div>
+    </div>
+</div>
 
 <div class="layout">
 
@@ -742,19 +866,109 @@ async function onSem() {
     showState("results");
 }
 
+// ── Build a single paper card ─────────────────────────────
+function buildPaperHTML(paper, pIdx) {
+    const total      = paper.pdfs.length;
+    const ready      = paper.pdfs.filter(p => p.status === "ready").length;
+    const countClass = ready === total && total > 0 ? "all" : ready === 0 ? "none" : "some";
+    const countLabel = `${ready}/${total} ready`;
+
+    const pdfsHTML = paper.pdfs.map(pdf => {
+        const st        = pdf.status;
+        const stLabel   = {ready:"Ready", pending:"Awaiting upload", processing:"Processing…", failed:"Failed"}[st] || st;
+        const shortPath = pdf.file_path ? pdf.file_path.split("/").slice(-3).join("/") : "—";
+        const actions   = st === "ready"
+            ? `<a href="/flipbook/${encodeURIComponent(pdf.pdf_name)}" target="_blank" class="btn-view">
+                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>View
+               </a>
+               <button class="btn-replace" onclick="triggerUpload('${pdf.pdf_name}', '${pdf.id}')">
+                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Replace
+               </button>`
+            : `<button class="btn-upload" onclick="triggerUpload('${pdf.pdf_name}', '${pdf.id}')">
+                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Upload PDF
+               </button>`;
+        return `
+        <div class="pdf-row" id="row-${pdf.pdf_name}">
+            <div class="pdf-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+            </div>
+            <div class="pdf-info">
+                <div class="pdf-title">${pdf.title}</div>
+                <div class="pdf-path">${shortPath}</div>
+                <div class="upload-progress" id="prog-${pdf.pdf_name}">
+                    <div class="progress-bar" id="bar-${pdf.pdf_name}"></div>
+                </div>
+            </div>
+            <span class="status-pill ${st}" id="status-${pdf.pdf_name}">
+                <span class="dot"></span>${stLabel}
+            </span>
+            <div class="upload-zone" id="actions-${pdf.pdf_name}">
+                <input type="file" accept=".pdf" id="file-${pdf.pdf_name}"
+                       onchange="doUpload('${pdf.pdf_name}', '${pdf.id}', this)">
+                ${actions}
+            </div>
+            <button class="btn-remove" title="Remove block"
+                    onclick="confirmRemove(${pdf.id}, '${pdf.title.replace(/'/g, "\\'")}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+                </svg>
+            </button>
+        </div>`;
+    }).join("");
+
+    return `
+    <div class="paper" id="paper-${paper.id}">
+        <div class="paper-hd" onclick="toggle(${paper.id})">
+            <div class="paper-num">${pIdx}</div>
+            <div class="paper-name">${paper.paper_name}</div>
+            <div class="paper-meta">
+                <span class="ready-count ${countClass}">${countLabel}</span>
+                <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </div>
+        </div>
+        <div class="pdf-list">
+            ${pdfsHTML}
+            <div class="add-block-row">
+                <div class="add-block-form" id="add-form-${paper.id}" style="display:none">
+                    <input type="text" id="add-input-${paper.id}"
+                           placeholder="e.g. Block 4 — Advanced Topics"
+                           class="block-input"
+                           onkeydown="if(event.key==='Enter') confirmAddBlock(${paper.id}); if(event.key==='Escape') cancelAddBlock(${paper.id})">
+                    <button class="btn-confirm-add" onclick="confirmAddBlock(${paper.id})">Add</button>
+                    <button class="btn-cancel-add" onclick="cancelAddBlock(${paper.id})">Cancel</button>
+                </div>
+                <button class="btn-add-block" id="add-btn-${paper.id}"
+                        onclick="showAddBlock(${paper.id})">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add New Block
+                </button>
+            </div>
+        </div>
+    </div>`;
+}
+
 // ── Render ────────────────────────────────────────────────
 function render(data) {
     const area = document.getElementById("stateResults");
     area.innerHTML = "";
 
-    // Update sidebar stats
+    // Sidebar stats
     const s = data.stats;
     document.getElementById("statTotal").textContent   = s.total_pdfs;
     document.getElementById("statReady").textContent   = s.ready_pdfs;
     document.getElementById("statPending").textContent = s.total_pdfs - s.ready_pdfs;
     document.getElementById("sideStats").style.display = "flex";
 
-    // Section header
+    // Header
     area.innerHTML = `
         <div class="section-hd">
             <span class="section-prog">${data.programme.code}</span>
@@ -762,116 +976,40 @@ function render(data) {
             <span class="section-badge">SEM ${data.semester}</span>
         </div>`;
 
-    // Groups
+    // API returns: groups[] → minor_label / type_groups[] → papers[]
     let pIdx = 0;
+
     data.groups.forEach(grp => {
-        const gEl = document.createElement("div");
-        gEl.className = "tgroup";
+        // ── Major / Minor section banner ──────────────────
+        if (grp.minor_label) {
+            const isMajor  = grp.minor === null;
+            const bannerEl = document.createElement("div");
+            bannerEl.className = "section-banner " + (isMajor ? "major" : "minor");
+            bannerEl.innerHTML = `
+                <span class="section-banner-icon">${isMajor ? "📘" : "📗"}</span>
+                <span class="section-banner-title">${grp.minor_label}</span>
+                <span class="section-banner-tag">${isMajor ? "Core / Common" : "Minor"}</span>`;
+            area.appendChild(bannerEl);
+        }
 
-        let papersHTML = "";
-        grp.papers.forEach(paper => {
-            pIdx++;
-            const total = paper.pdfs.length;
-            const ready = paper.pdfs.filter(p => p.status === "ready").length;
-            const countClass = ready === total ? "all" : ready === 0 ? "none" : "some";
-            const countLabel = `${ready}/${total} ready`;
-
-            let pdfsHTML = paper.pdfs.map(pdf => {
-                const st = pdf.status;
-                const stLabel = {ready:"Ready", pending:"Awaiting upload", processing:"Processing…", failed:"Failed"}[st] || st;
-                const shortPath = pdf.file_path ? pdf.file_path.split("/").slice(-3).join("/") : "—";
-
-                const actions = st === "ready"
-                    ? `<a href="/flipbook/${encodeURIComponent(pdf.pdf_name)}" target="_blank" class="btn-view">
-                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
-                           View
-                       </a>
-                       <button class="btn-replace" onclick="triggerUpload('${pdf.pdf_name}', '${pdf.id}')">
-                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                           Replace
-                       </button>`
-                    : `<button class="btn-upload" onclick="triggerUpload('${pdf.pdf_name}', '${pdf.id}')">
-                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                           Upload PDF
-                       </button>`;
-
-                return `
-                <div class="pdf-row" id="row-${pdf.pdf_name}">
-                    <div class="pdf-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                        </svg>
-                    </div>
-                    <div class="pdf-info">
-                        <div class="pdf-title">${pdf.title}</div>
-                        <div class="pdf-path">${shortPath}</div>
-                        <div class="upload-progress" id="prog-${pdf.pdf_name}">
-                            <div class="progress-bar" id="bar-${pdf.pdf_name}"></div>
-                        </div>
-                    </div>
-                    <span class="status-pill ${st}" id="status-${pdf.pdf_name}">
-                        <span class="dot"></span>${stLabel}
-                    </span>
-                    <div class="upload-zone" id="actions-${pdf.pdf_name}">
-                        <input type="file" accept=".pdf" id="file-${pdf.pdf_name}"
-                               onchange="doUpload('${pdf.pdf_name}', '${pdf.id}', this)">
-                        ${actions}
-                    </div>
-                    <button class="btn-remove" title="Remove block"
-                            onclick="confirmRemove(${pdf.id}, '${pdf.title.replace(/'/g, "\\'")}')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                            <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
-                        </svg>
-                    </button>
-                </div>`;
-            }).join("");
-
-papersHTML += `
-            <div class="paper" id="paper-${paper.id}">
-                <div class="paper-hd" onclick="toggle(${paper.id})">
-                    <div class="paper-num">${pIdx}</div>
-                    <div class="paper-name">${paper.paper_name}</div>
-                    <div class="paper-meta">
-                        <span class="ready-count ${countClass}">${countLabel}</span>
-                        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                    </div>
+        // ── Type groups (DSC, DSE, AEC …) ────────────────
+        (grp.type_groups || []).forEach(tg => {
+            const gEl = document.createElement("div");
+            gEl.className = "tgroup";
+            let papersHTML = "";
+            (tg.papers || []).forEach(paper => {
+                pIdx++;
+                papersHTML += buildPaperHTML(paper, pIdx);
+            });
+            gEl.innerHTML = `
+                <div class="tgroup-hd">
+                    <span class="tbadge ${tg.type}">${tg.type}</span>
+                    <span class="tgroup-label">${tg.label || TYPE_LABELS[tg.type] || tg.type}</span>
+                    <div class="tgroup-line"></div>
                 </div>
-                <div class="pdf-list">
-                    ${pdfsHTML}
-                    <div class="add-block-row">
-                        <div class="add-block-form" id="add-form-${paper.id}" style="display:none">
-                            <input type="text" id="add-input-${paper.id}"
-                                   placeholder="e.g. Block 4 — Advanced Topics"
-                                   class="block-input"
-                                   onkeydown="if(event.key==='Enter') confirmAddBlock(${paper.id}); if(event.key==='Escape') cancelAddBlock(${paper.id})">
-                            <button class="btn-confirm-add" onclick="confirmAddBlock(${paper.id})">Add</button>
-                            <button class="btn-cancel-add" onclick="cancelAddBlock(${paper.id})">Cancel</button>
-                        </div>
-                        <button class="btn-add-block" id="add-btn-${paper.id}"
-                                onclick="showAddBlock(${paper.id})">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                            </svg>
-                            Add New Block
-                        </button>
-                    </div>
-                </div>
-            </div>`;
+                ${papersHTML}`;
+            area.appendChild(gEl);
         });
-
-        gEl.innerHTML = `
-            <div class="tgroup-hd">
-                <span class="tbadge ${grp.type}">${grp.type}</span>
-                <span class="tgroup-label">${TYPE_LABELS[grp.type] || grp.type}</span>
-                <div class="tgroup-line"></div>
-            </div>
-            ${papersHTML}`;
-        area.appendChild(gEl);
     });
 }
 
@@ -1109,6 +1247,20 @@ async function doRemove(pdfId) {
     }
 }
 
+</script>
+
+<script>
+function openMobileNav() {
+    document.getElementById("mobileNavDrawer").classList.add("open");
+    document.body.style.overflow = "hidden";
+}
+function closeMobileNav() {
+    document.getElementById("mobileNavDrawer").classList.remove("open");
+    document.body.style.overflow = "";
+}
+document.addEventListener("keydown", e => {
+    if (e.key === "Escape") closeMobileNav();
+});
 </script>
 </body>
 </html>

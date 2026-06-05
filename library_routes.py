@@ -7,6 +7,7 @@ from database import (
     fetch_semesters,
     fetch_papers_with_pdfs,
     fetch_programme_by_id,
+    fetch_minors_for_programme,
     fetch_pdf_by_name,
     update_pdf_status,
     get_db
@@ -23,8 +24,9 @@ TYPE_LABELS = {
     "VAC": "Value Added Course",
     "GE":  "Generic Elective",
     "SEC": "Skill Enhancement Course",
+    "FW":  "Field Work / Project",
 }
-TYPE_ORDER = ["DSC", "DSE", "AEC", "VAC", "GE", "SEC"]
+TYPE_ORDER = ["DSC", "DSE", "AEC", "VAC", "GE", "SEC", "FW"]
 
 
 # ─────────────────────────────────────────────────────────────
@@ -33,7 +35,6 @@ TYPE_ORDER = ["DSC", "DSE", "AEC", "VAC", "GE", "SEC"]
 
 @library_bp.route("/library")
 def library():
-    # Guests can browse — no login required
     return render_template("library.html")
 
 
@@ -62,44 +63,129 @@ def api_papers(programme_id, semester):
     if not programme:
         return jsonify({"error": "Programme not found"}), 404
 
-    papers = fetch_papers_with_pdfs(programme_id, semester)
+    papers  = fetch_papers_with_pdfs(programme_id, semester)
+    minors  = fetch_minors_for_programme(programme_id, semester)
+    has_minors = len(minors) > 0
 
-    grouped = {}
-    for paper in papers:
-        ptype = paper["paper_type"]
-        if ptype not in grouped:
-            grouped[ptype] = []
-        grouped[ptype].append(paper)
+    # ── Group papers ──────────────────────────────────────────
+    # For bachelor programmes with minors: group by minor first, then paper_type
+    # For masters/no-minor programmes: group by paper_type only
 
-    ordered_groups = []
-    for t in TYPE_ORDER:
-        if t in grouped:
+    if has_minors:
+        # Build minor → paper_type → papers structure
+        minor_groups = {}
+        no_minor_papers = []
+
+        for paper in papers:
+            minor = paper.get("minor")
+            ptype = paper["paper_type"]
+            if minor:
+                if minor not in minor_groups:
+                    minor_groups[minor] = {}
+                if ptype not in minor_groups[minor]:
+                    minor_groups[minor][ptype] = []
+                minor_groups[minor][ptype].append(paper)
+            else:
+                no_minor_papers.append(paper)
+
+        ordered_groups = []
+
+        # Common papers (no minor) first
+        if no_minor_papers:
+            common_by_type = {}
+            for paper in no_minor_papers:
+                ptype = paper["paper_type"]
+                if ptype not in common_by_type:
+                    common_by_type[ptype] = []
+                common_by_type[ptype].append(paper)
+
+            common_type_groups = []
+            for t in TYPE_ORDER:
+                if t in common_by_type:
+                    common_type_groups.append({
+                        "type":   t,
+                        "label":  TYPE_LABELS.get(t, t),
+                        "papers": common_by_type[t],
+                    })
+            for t in common_by_type:
+                if t not in TYPE_ORDER:
+                    common_type_groups.append({
+                        "type":   t,
+                        "label":  TYPE_LABELS.get(t, t),
+                        "papers": common_by_type[t],
+                    })
+
             ordered_groups.append({
-                "type": t,
-                "label": TYPE_LABELS.get(t, t),
-                "papers": grouped[t]
-            })
-    for t in grouped:
-        if t not in TYPE_ORDER:
-            ordered_groups.append({
-                "type": t,
-                "label": TYPE_LABELS.get(t, t),
-                "papers": grouped[t]
+                "minor":       None,
+                "minor_label": "Common Papers",
+                "type_groups": common_type_groups,
             })
 
-    total_papers = sum(len(g["papers"]) for g in ordered_groups)
-    total_pdfs   = sum(len(p["pdfs"]) for g in ordered_groups for p in g["papers"])
-    ready_pdfs   = sum(
-        1 for g in ordered_groups
-        for p in g["papers"]
-        for pdf in p["pdfs"]
-        if pdf["status"] == "ready"
-    )
+        # Minor-specific groups
+        for minor in sorted(minor_groups.keys()):
+            by_type = minor_groups[minor]
+            type_groups = []
+            for t in TYPE_ORDER:
+                if t in by_type:
+                    type_groups.append({
+                        "type":   t,
+                        "label":  TYPE_LABELS.get(t, t),
+                        "papers": by_type[t],
+                    })
+            for t in by_type:
+                if t not in TYPE_ORDER:
+                    type_groups.append({
+                        "type":   t,
+                        "label":  TYPE_LABELS.get(t, t),
+                        "papers": by_type[t],
+                    })
+            ordered_groups.append({
+                "minor":       minor,
+                "minor_label": f"{minor} (Minor)",
+                "type_groups": type_groups,
+            })
+
+    else:
+        # No minors — flat grouping by paper_type
+        by_type = {}
+        for paper in papers:
+            ptype = paper["paper_type"]
+            if ptype not in by_type:
+                by_type[ptype] = []
+            by_type[ptype].append(paper)
+
+        type_groups = []
+        for t in TYPE_ORDER:
+            if t in by_type:
+                type_groups.append({
+                    "type":   t,
+                    "label":  TYPE_LABELS.get(t, t),
+                    "papers": by_type[t],
+                })
+        for t in by_type:
+            if t not in TYPE_ORDER:
+                type_groups.append({
+                    "type":   t,
+                    "label":  TYPE_LABELS.get(t, t),
+                    "papers": by_type[t],
+                })
+
+        ordered_groups = [{
+            "minor":       None,
+            "minor_label": None,
+            "type_groups": type_groups,
+        }]
+
+    total_papers = len(papers)
+    total_pdfs   = sum(len(p["pdfs"]) for p in papers)
+    ready_pdfs   = sum(1 for p in papers for pdf in p["pdfs"] if pdf["status"] == "ready")
 
     return jsonify({
-        "programme": programme,
-        "semester":  semester,
-        "groups":    ordered_groups,
+        "programme":  programme,
+        "semester":   semester,
+        "has_minors": has_minors,
+        "minors":     minors,
+        "groups":     ordered_groups,
         "stats": {
             "total_papers": total_papers,
             "total_pdfs":   total_pdfs,
@@ -117,7 +203,7 @@ def api_pdf_status(pdf_name):
 
 
 # ─────────────────────────────────────────────────────────────
-# ADMIN — upload
+# ADMIN — upload PDF
 # ─────────────────────────────────────────────────────────────
 
 @library_bp.route("/admin/library/upload", methods=["POST"])
@@ -182,20 +268,20 @@ def add_block():
             cur.execute(
                 "SELECT COUNT(*) as cnt FROM pdfs WHERE paper_id = %s", (paper_id,)
             )
-            existing = cur.fetchone()["cnt"]
+            existing  = cur.fetchone()["cnt"]
+            block_num = existing + 1
 
-            block_num  = existing + 1
             safe_title = title.replace(" ", "_").replace("/", "-")[:40]
             pdf_name   = f"{paper['code']}_S{paper['semester']}_P{paper_id}_Block{block_num}_{safe_title}"
-
-            file_path = build_upload_path(paper["code"], paper["semester"], paper["paper_name"], pdf_name)
+            file_path  = build_upload_path(
+                paper["code"], paper["semester"], paper["paper_name"], pdf_name
+            )
 
             cur.execute("""
                 INSERT INTO pdfs (paper_id, title, pdf_name, file_path, status)
                 VALUES (%s, %s, %s, %s, 'pending')
             """, (paper_id, title, pdf_name, file_path))
             conn.commit()
-
             new_id = cur.lastrowid
 
     finally:
@@ -207,7 +293,7 @@ def add_block():
         "pdf_name":  pdf_name,
         "title":     title,
         "status":    "pending",
-        "file_path": file_path
+        "file_path": file_path,
     })
 
 
@@ -222,7 +308,6 @@ def remove_block(pdf_id):
         with conn.cursor() as cur:
             cur.execute("SELECT * FROM pdfs WHERE id = %s", (pdf_id,))
             pdf = cur.fetchone()
-
             if not pdf:
                 return jsonify({"error": "Block not found"}), 404
 
@@ -245,7 +330,6 @@ def remove_block(pdf_id):
                     if m:
                         paths_to_try.append(m)
                 paths_to_try.append(os.path.join(folder, f"{pdf['pdf_name']}.json"))
-
                 for p in paths_to_try:
                     if p and os.path.exists(p):
                         os.remove(p)
@@ -260,7 +344,7 @@ def remove_block(pdf_id):
     return jsonify({
         "ok":      True,
         "id":      pdf_id,
-        "message": f"Block '{pdf['title']}' removed."
+        "message": f"Block '{pdf['title']}' removed.",
     })
 
 

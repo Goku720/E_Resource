@@ -13,6 +13,10 @@ PAGE_TEXT_FOLDER = os.environ.get("PAGE_TEXT_FOLDER", "page_texts")
 STATUS_FOLDER    = os.environ.get("STATUS_FOLDER",    "status")
 SECRET_KEY       = os.environ.get("SECRET_KEY",        "dev-secret-key")
 
+# ── KKHSOU Student API ───────────────────────────────────────
+KKHSOU_API_BASE  = os.environ.get("KKHSOU_API_BASE",  "http://192.168.31.40:8088")
+KKHSOU_API_KEY   = os.environ.get("KKHSOU_API_KEY",   "password@123")
+
 # ── MySQL connection ─────────────────────────────────────────
 MYSQL_HOST     = os.environ.get("MYSQL_HOST",     "localhost")
 MYSQL_PORT     = int(os.environ.get("MYSQL_PORT", 3306))
@@ -35,3 +39,6 @@ def build_upload_path(programme_code, semester, paper_name, pdf_name):
     )
 
     return os.path.join(folder, f"{pdf_name}.pdf")
+
+# Dev mode — set to False in production
+USE_FAKE_LOGIN = False

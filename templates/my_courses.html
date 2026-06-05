@@ -321,7 +321,7 @@ function renderContent(data) {
     const area = document.getElementById("stateContent");
     area.innerHTML = "";
 
-    // Semester switcher (if multiple semesters available)
+    // Semester switcher
     if (allSemesters.length > 1) {
         const sw = document.createElement("div");
         sw.className = "sem-switcher";
@@ -339,7 +339,6 @@ function renderContent(data) {
     const st = data.stats;
     area.innerHTML += `
         <div class="stats">
-            <div class="stat"><div class="stat-n">${data.groups.length}</div><div class="stat-l">Paper Types</div></div>
             <div class="stat"><div class="stat-n">${st.total_papers}</div><div class="stat-l">Papers</div></div>
             <div class="stat"><div class="stat-n">${st.total_pdfs}</div><div class="stat-l">Materials</div></div>
             <div class="stat"><div class="stat-n">${st.ready_pdfs}</div><div class="stat-l">Ready to Read</div></div>
@@ -347,69 +346,79 @@ function renderContent(data) {
 
     if (st.total_pdfs === 0) { showState("empty"); return; }
 
-    // Groups
+    // Groups → type_groups → papers
     let pIdx = 0;
     data.groups.forEach(grp => {
-        const gEl = document.createElement("div");
-        gEl.className = "tgroup";
 
-        let papersHTML = "";
-        grp.papers.forEach(paper => {
-            pIdx++;
-            const total = paper.pdfs.length;
-            const ready = paper.pdfs.filter(p => p.status === "ready").length;
+        // Optional minor heading for bachelor programmes
+        if (grp.minor_label) {
+            area.innerHTML += `
+                <div style="margin:24px 0 12px;font-family:'Playfair Display',serif;
+                            font-size:1rem;color:var(--ink-soft);border-bottom:1px solid var(--border);
+                            padding-bottom:8px">${grp.minor_label}</div>`;
+        }
 
-            const pdfsHTML = paper.pdfs.map(pdf => {
-                const st    = pdf.status;
-                const sIcon = {ready:"✓", pending:"⏳", processing:"⟳", failed:"✕"}[st] || "–";
-                const sLbl  = {ready:"Ready", pending:"Coming soon", processing:"Processing…", failed:"Unavailable"}[st] || st;
+        grp.type_groups.forEach(tg => {
+            const gEl = document.createElement("div");
+            gEl.className = "tgroup";
 
-                return `
-                <div class="pdf-row">
-                    <div class="pdf-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
+            let papersHTML = "";
+            tg.papers.forEach(paper => {
+                pIdx++;
+                const total = paper.pdfs.length;
+                const ready = paper.pdfs.filter(p => p.status === "ready").length;
+
+                const pdfsHTML = paper.pdfs.map(pdf => {
+                    const s     = pdf.status;
+                    const sIcon = {ready:"✓", pending:"⏳", processing:"⟳", failed:"✕"}[s] || "–";
+                    const sLbl  = {ready:"Ready", pending:"Coming soon", processing:"Processing…", failed:"Unavailable"}[s] || s;
+                    return `
+                    <div class="pdf-row">
+                        <div class="pdf-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                        </div>
+                        <div class="pdf-meta">
+                            <div class="pdf-title">${pdf.title}</div>
+                            <span class="pdf-status ${s}">${sIcon} ${sLbl}</span>
+                        </div>
+                        <div class="pdf-actions">
+                            ${s === 'ready'
+                                ? `<a href="/flipbook/${encodeURIComponent(pdf.pdf_name)}" class="btn btn-primary">
+                                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
+                                       Read
+                                   </a>`
+                                : `<button class="btn btn-muted" disabled>Not available</button>`
+                            }
+                        </div>
+                    </div>`;
+                }).join("");
+
+                papersHTML += `
+                <div class="paper" id="p${paper.id}">
+                    <div class="paper-hd" onclick="toggle(${paper.id})">
+                        <div class="paper-num">${pIdx}</div>
+                        <div class="paper-name">${paper.paper_name}</div>
+                        <div class="pdf-count">${ready}/${total} ready</div>
+                        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
                         </svg>
                     </div>
-                    <div class="pdf-meta">
-                        <div class="pdf-title">${pdf.title}</div>
-                        <span class="pdf-status ${st}">${sIcon} ${sLbl}</span>
-                    </div>
-                    <div class="pdf-actions">
-                        ${st === 'ready'
-                            ? `<a href="/flipbook/${encodeURIComponent(pdf.pdf_name)}" class="btn btn-primary">
-                                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
-                                   Read
-                               </a>`
-                            : `<button class="btn btn-muted" disabled>Not available</button>`
-                        }
-                    </div>
+                    <div class="pdf-list">${pdfsHTML}</div>
                 </div>`;
-            }).join("");
+            });
 
-            papersHTML += `
-            <div class="paper" id="p${paper.id}">
-                <div class="paper-hd" onclick="toggle(${paper.id})">
-                    <div class="paper-num">${pIdx}</div>
-                    <div class="paper-name">${paper.paper_name}</div>
-                    <div class="pdf-count">${ready}/${total} ready</div>
-                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 12 15 18 9"/>
-                    </svg>
+            gEl.innerHTML = `
+                <div class="tgroup-hd">
+                    <span class="tbadge ${tg.type}">${tg.type}</span>
+                    <span class="tgroup-label">${tg.label}</span>
+                    <div class="tgroup-line"></div>
                 </div>
-                <div class="pdf-list">${pdfsHTML}</div>
-            </div>`;
+                ${papersHTML}`;
+            area.appendChild(gEl);
         });
-
-        gEl.innerHTML = `
-            <div class="tgroup-hd">
-                <span class="tbadge ${grp.type}">${grp.type}</span>
-                <span class="tgroup-label">${TYPE_LABELS[grp.type] || grp.type}</span>
-                <div class="tgroup-line"></div>
-            </div>
-            ${papersHTML}`;
-        area.appendChild(gEl);
     });
 }
 
