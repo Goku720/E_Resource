@@ -1,6 +1,7 @@
 # library_routes.py
 
 import os
+from path_utils import mirror_path
 from flask import Blueprint, render_template, jsonify, session, redirect, url_for, request
 from database import (
     fetch_all_programmes,
@@ -10,10 +11,12 @@ from database import (
     fetch_minors_for_programme,
     fetch_pdf_by_name,
     update_pdf_status,
+    upsert_programme_from_api,
     get_db
 )
 from tasks import process_book_task
-from config import build_upload_path
+from config import build_upload_path, KKHSOU_API_BASE, KKHSOU_API_KEY
+from paper_sync import fetch_program_papers_from_api, store_papers, semester_has_papers, is_bachelor, KKHSOU_MINORS
 
 library_bp = Blueprint("library", __name__)
 
@@ -223,12 +226,13 @@ def admin_library_upload():
         return jsonify({"error": f"No PDF slot found for '{pdf_name}'"}), 404
 
     file_path = pdf_row["file_path"]
+    language  = pdf_row.get("language", "English") or "English"
     folder    = os.path.dirname(file_path)
     os.makedirs(folder, exist_ok=True)
     file.save(file_path)
 
     update_pdf_status(pdf_name, "processing")
-    process_book_task.delay(pdf_name, file_path)
+    process_book_task.delay(pdf_name, file_path, language)
 
     return jsonify({
         "ok":       True,
@@ -247,6 +251,7 @@ def add_block():
     data     = request.get_json()
     paper_id = data.get("paper_id")
     title    = data.get("title", "").strip()
+    language = data.get("language", "English").strip() or "English"
 
     if not paper_id or not title:
         return jsonify({"error": "paper_id and title are required"}), 400
@@ -278,9 +283,9 @@ def add_block():
             )
 
             cur.execute("""
-                INSERT INTO pdfs (paper_id, title, pdf_name, file_path, status)
-                VALUES (%s, %s, %s, %s, 'pending')
-            """, (paper_id, title, pdf_name, file_path))
+                INSERT INTO pdfs (paper_id, title, pdf_name, file_path, status, language)
+                VALUES (%s, %s, %s, %s, 'pending', %s)
+            """, (paper_id, title, pdf_name, file_path, language))
             conn.commit()
             new_id = cur.lastrowid
 
@@ -293,6 +298,7 @@ def add_block():
         "pdf_name":  pdf_name,
         "title":     title,
         "status":    "pending",
+        "language":  language,
         "file_path": file_path,
     })
 
@@ -313,27 +319,13 @@ def remove_block(pdf_id):
 
             file_path = pdf["file_path"]
 
-            def _mirror(base, fp, up="uploads"):
-                try:
-                    rel = os.path.relpath(fp, up)
-                    return os.path.join(base, os.path.splitext(rel)[0] + ".json")
-                except ValueError:
-                    return None
-
             if file_path and os.path.exists(file_path):
                 os.remove(file_path)
 
             for folder in ["summaries", "page_texts", "status"]:
-                paths_to_try = []
-                if file_path:
-                    m = _mirror(folder, file_path)
-                    if m:
-                        paths_to_try.append(m)
-                paths_to_try.append(os.path.join(folder, f"{pdf['pdf_name']}.json"))
-                for p in paths_to_try:
-                    if p and os.path.exists(p):
-                        os.remove(p)
-                        break
+                p = mirror_path(folder, file_path, pdf["pdf_name"])
+                if os.path.exists(p):
+                    os.remove(p)
 
             cur.execute("DELETE FROM pdfs WHERE id = %s", (pdf_id,))
             conn.commit()
@@ -349,6 +341,129 @@ def remove_block(pdf_id):
 
 
 # ─────────────────────────────────────────────────────────────
+# ADMIN — full programme+paper list for admin_library.html
+# ─────────────────────────────────────────────────────────────
+
+@library_bp.route("/api/admin/kkhsou_papers")
+def api_kkhsou_papers():
+    """
+    Returns all programmes with their semesters and papers from the local DB.
+    Shape: [ { id, code, name, semesters: [ { semester, papers: [...] } ] } ]
+    """
+    programmes = fetch_all_programmes()
+    result = []
+    for prog in programmes:
+        conn = get_db()
+        try:
+            with conn.cursor() as cur:
+                # Distinct semesters for this programme
+                cur.execute(
+                    "SELECT DISTINCT semester FROM papers WHERE programme_id=%s ORDER BY semester",
+                    (prog["id"],)
+                )
+                semesters = [row["semester"] for row in cur.fetchall()]
+
+                sem_list = []
+                for sem in semesters:
+                    cur.execute("""
+                        SELECT id, paper_type, paper_name, minor
+                        FROM papers
+                        WHERE programme_id=%s AND semester=%s
+                        ORDER BY paper_type, paper_name
+                    """, (prog["id"], sem))
+                    raw_papers = cur.fetchall()
+
+                    papers_out = []
+                    for p in raw_papers:
+                        # Fetch PDFs for this paper
+                        cur.execute(
+                            "SELECT id, title, pdf_name, file_path, status, language FROM pdfs WHERE paper_id=%s ORDER BY id",
+                            (p["id"],)
+                        )
+                        pdfs = [dict(row) for row in cur.fetchall()]
+
+                        papers_out.append({
+                            "id":         p["id"],
+                            "paper_code": str(p["id"]),
+                            "paper_name": p["paper_name"],
+                            "group_code": p["paper_type"],
+                            "group_name": TYPE_LABELS.get(p["paper_type"], p["paper_type"]),
+                            "minor":      p["minor"],
+                            "pdfs":       pdfs,
+                        })
+
+                    sem_list.append({"semester": sem, "papers": papers_out})
+
+        finally:
+            conn.close()
+
+        result.append({
+            "id":        prog["id"],
+            "code":      prog["code"],
+            "name":      prog["name"],
+            "semesters": sem_list,
+        })
+
+    return jsonify(result)
+
+
+# ─────────────────────────────────────────────────────────────
+# ADMIN — add a new programme and pull its papers from KKHSOU
+# ─────────────────────────────────────────────────────────────
+
+@library_bp.route("/api/admin/add_programme", methods=["POST"])
+def api_add_programme():
+    data = request.get_json()
+    code = (data.get("code") or "").strip().upper()
+    name = (data.get("name") or "").strip()
+
+    if not code:
+        return jsonify({"error": "Programme code is required"}), 400
+
+    # Upsert into local DB (api_prog_id=None — admin-added, not from student login)
+    prog = upsert_programme_from_api(None, code, name or code)
+    if not prog:
+        return jsonify({"error": "Failed to create programme in database"}), 500
+
+    pulled = 0
+    errors = []
+
+    if is_bachelor(code):
+        # Degree programme — loop every minor × semester
+        for minor in KKHSOU_MINORS:
+            for sem in range(1, 7):
+                try:
+                    papers = fetch_program_papers_from_api(code, sem, minor=minor)
+                    if papers:
+                        count  = store_papers(prog["id"], sem, papers, code, minor=minor)
+                        pulled += count
+                except Exception as e:
+                    errors.append(f"{minor} sem {sem}: {e}")
+    else:
+        # Masters/PG — 4 semesters, no minor needed
+        for sem in range(1, 5):
+            if semester_has_papers(prog["id"], sem):
+                continue
+            try:
+                papers = fetch_program_papers_from_api(code, sem)
+                if papers:
+                    count  = store_papers(prog["id"], sem, papers, code)
+                    pulled += count
+            except Exception as e:
+                errors.append(f"sem {sem}: {e}")
+
+    return jsonify({
+        "ok":      True,
+        "id":      prog["id"],
+        "code":    prog["code"],
+        "name":    prog["name"],
+        "pulled":  pulled,
+        "errors":  errors,
+        "message": f"Programme '{code}' ready. {pulled} papers synced.",
+    })
+
+
+# ─────────────────────────────────────────────────────────────
 # ADMIN — mark ready manually
 # ─────────────────────────────────────────────────────────────
 
@@ -356,3 +471,56 @@ def remove_block(pdf_id):
 def mark_ready(pdf_name):
     update_pdf_status(pdf_name, "ready")
     return jsonify({"ok": True, "pdf_name": pdf_name, "status": "ready"})
+
+
+# ─────────────────────────────────────────────────────────────
+# ADMIN — remove a programme and all its papers/PDFs
+# ─────────────────────────────────────────────────────────────
+
+@library_bp.route("/api/admin/remove_programme/<int:prog_id>", methods=["DELETE"])
+def remove_programme(prog_id):
+    conn = get_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM programmes WHERE id=%s", (prog_id,))
+            prog = cur.fetchone()
+            if not prog:
+                return jsonify({"error": "Programme not found"}), 404
+
+            # Get all PDFs for this programme to delete files
+            cur.execute("""
+                SELECT pdfs.id, pdfs.pdf_name, pdfs.file_path
+                FROM pdfs
+                JOIN papers ON papers.id = pdfs.paper_id
+                WHERE papers.programme_id = %s
+            """, (prog_id,))
+            pdfs = cur.fetchall()
+
+
+            # Delete files from disk
+            for pdf in pdfs:
+                fp = pdf["file_path"]
+                if fp and os.path.exists(fp):
+                    os.remove(fp)
+                for folder in ["summaries", "page_texts", "status"]:
+                    p = mirror_path(folder, fp, pdf["pdf_name"])
+                    if os.path.exists(p):
+                        os.remove(p)
+
+            # Delete DB rows (cascade: pdfs → papers → programme)
+            cur.execute("""
+                DELETE pdfs FROM pdfs
+                JOIN papers ON papers.id = pdfs.paper_id
+                WHERE papers.programme_id = %s
+            """, (prog_id,))
+            cur.execute("DELETE FROM papers WHERE programme_id=%s", (prog_id,))
+            cur.execute("DELETE FROM programmes WHERE id=%s", (prog_id,))
+            conn.commit()
+
+    finally:
+        conn.close()
+
+    return jsonify({
+        "ok":      True,
+        "message": f"Programme '{prog['code']}' and all its data removed.",
+    })

@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import update_pdf_status
+from path_utils import mirror_path
 
 from PIL import Image
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
@@ -25,35 +26,78 @@ os.makedirs(STATUS_FOLDER, exist_ok=True)
 # ------------------ TESSERACT ------------------
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-# ------------------ MODEL ------------------
-model_name = "sshleifer/distilbart-cnn-12-6"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+# ------------------ LANGUAGE MAP ------------------
+# Maps display language names to Tesseract lang codes.
+# Requires the corresponding tessdata language packs installed.
+# Download from: https://github.com/tesseract-ocr/tessdata
+TESSERACT_LANG_MAP = {
+    "English":   "eng",
+    "Assamese":  "asm",
+    "Bengali":   "ben",
+    "Hindi":     "hin",
+    "Bodo":      "brx",
+    "Manipuri":  "mni",
+    "Nepali":    "nep",
+    "Urdu":      "urd",
+    "Sanskrit":  "san",
+    "Odia":      "ori",
+}
 
-# =========================================================
-# PATH HELPERS
-# =========================================================
-def _mirrored_json_path(base_folder, pdf_path, pdf_name):
+def get_tess_lang(language):
+    """Returns tesseract lang code, falls back to eng if pack not mapped."""
+    return TESSERACT_LANG_MAP.get(language or "English", "eng")
+
+# ------------------ MODEL REGISTRY ------------------
+# Models are loaded lazily on first use and cached in memory.
+# Keys match language names from TESSERACT_LANG_MAP.
+
+_MODEL_CACHE = {}  # { model_name: (tokenizer, model) }
+
+# Languages supported by ai4bharat/MultiIndicSentenceSummarizationSS
+# Format: input must be "text </s> <2xx>" where xx = lang code below
+INDIC_SUPPORTED = {
+    # "Assamese": "as",
+    # "Bengali":  "bn",
+    "Hindi":    "hi",
+    # "Odia":     "or",
+    # "Sanskrit": "sa",
+}
+
+# Languages with no summarization model — OCR/text only
+NO_SUMMARY_LANGS = {"Bodo", "Manipuri", "Urdu", "Assamese","Bengali","Sanskrit",}
+
+def _get_model(language="English"):
     """
-    Returns a mirrored JSON path under base_folder that matches
-    the upload subfolder structure.
-
-    e.g. uploads/BCA/Semester_1/Intro.../BCA_S1_P11_Block1.pdf
-      ->  summaries/BCA/Semester_1/Intro.../BCA_S1_P11_Block1.json
-
-    Falls back to flat base_folder/pdf_name.json when pdf_path is
-    absent or on a different Windows drive.
+    Returns (tokenizer, model, lang_code) for the given language.
+    lang_code is used by IndicBART input formatting.
+    Returns (None, None, None) for unsupported languages.
+    Loads lazily and caches.
     """
-    if pdf_path:
-        try:
-            rel      = os.path.relpath(pdf_path, UPLOAD_FOLDER)
-            # Guard against paths that escape the uploads root (e.g. "../../x")
-            if not rel.startswith(".."):
-                rel_json = os.path.splitext(rel)[0] + ".json"
-                return os.path.join(base_folder, rel_json)
-        except ValueError:
-            pass   # different Windows drives
-    return os.path.join(base_folder, f"{pdf_name}.json")
+    if language in NO_SUMMARY_LANGS:
+        print(f"[model] No summarization model for {language}, skipping.")
+        return None, None, None
+
+    if language in INDIC_SUPPORTED:
+        model_name = "ai4bharat/MultiIndicSentenceSummarizationSS"
+        lang_code  = INDIC_SUPPORTED[language]
+    elif language == "Nepali":
+        model_name = "GenzNepal/mt5-summarize-nepali"
+        lang_code  = None
+    else:
+        # English and anything else falls back to distilbart
+        model_name = "sshleifer/distilbart-cnn-12-6"
+        lang_code  = None
+
+    if model_name not in _MODEL_CACHE:
+        print(f"[model] Loading {model_name} for language={language}…")
+        tok = AutoTokenizer.from_pretrained(model_name)
+        mdl = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        _MODEL_CACHE[model_name] = (tok, mdl)
+        print(f"[model] {model_name} loaded and cached.")
+
+    tok, mdl = _MODEL_CACHE[model_name]
+    return tok, mdl, lang_code
+
 
 
 # =========================================================
@@ -62,11 +106,9 @@ def _mirrored_json_path(base_folder, pdf_path, pdf_name):
 def update_status(pdf_name, status, progress=0, message="", pdf_path=None):
     """
     Save status JSON mirroring the upload subfolder structure.
-    e.g. uploads/MAS/Semester_1/History.../Block1.pdf
-      ->   status/MAS/Semester_1/History.../Block1.json
     Falls back to flat status/pdf_name.json if pdf_path not given.
     """
-    path = _mirrored_json_path(STATUS_FOLDER, pdf_path, pdf_name)
+    path = mirror_path(STATUS_FOLDER, pdf_path, pdf_name)
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
     with open(path, "w", encoding="utf-8") as f:
@@ -75,8 +117,6 @@ def update_status(pdf_name, status, progress=0, message="", pdf_path=None):
             "progress": progress,
             "message":  message
         }, f, ensure_ascii=False, indent=2)
- 
- 
 
 # =========================================================
 # OCR + TEXT CLEANING
@@ -96,6 +136,64 @@ def is_text_good(text):
         return False
 
     return True
+
+
+# Keywords that indicate non-content pages to skip
+_JUNK_PAGE_PATTERNS = [
+    r"^\s*table\s+of\s+contents?\s*$",
+    r"^\s*contents?\s*$",
+    r"^\s*index\s*$",
+    r"^\s*acknowledgements?\s*$",
+    r"^\s*acknowledgments?\s*$",
+    r"^\s*preface\s*$",
+    r"^\s*foreword\s*$",
+    r"^\s*dedication\s*$",
+    r"^\s*certificate\s*$",
+    r"^\s*declaration\s*$",
+    r"^\s*bibliography\s*$",
+    r"^\s*references?\s*$",
+    r"^\s*appendix\s*$",
+    r"^\s*glossary\s*$",
+    r"^\s*this\s+page\s+is\s+intentionally\s+left\s+blank",
+    r"^\s*all\s+rights\s+reserved",
+    r"^\s*copyright\s+",
+    r"^\s*published\s+by\s+",
+    r"^\s*printed\s+in\s+",
+]
+
+import re as _re
+
+def is_junk_page(text):
+    """
+    Returns True if this page should be skipped during summarization.
+    Detects: cover pages, TOC, certificates, blank pages, copyright, etc.
+    Still saved to page_text for PDF viewer — just excluded from summarization.
+    """
+    if not text or len(text.strip()) < 30:
+        return True  # blank / near-blank
+
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+
+    # Very few lines + short = likely a cover or decorative page
+    if len(lines) <= 4 and len(text.split()) < 25:
+        return True
+
+    # Check first 5 lines for junk headings
+    check_lines = lines[:5]
+    for line in check_lines:
+        for pat in _JUNK_PAGE_PATTERNS:
+            if _re.search(pat, line.lower()):
+                print(f"[SKIP PAGE] Junk pattern matched: {line!r}")
+                return True
+
+    # Page that's mostly numbers (TOC page numbers, index)
+    words = text.split()
+    if len(words) > 0:
+        numeric = sum(1 for w in words if w.strip(".,)(-").isdigit())
+        if numeric / len(words) > 0.5:
+            return True
+
+    return False
 
 
 def clean_extracted_text(text):
@@ -144,7 +242,7 @@ def clean_extracted_text(text):
     return "\n".join(cleaned_final).strip()
 
 
-def extract_text_hybrid(pdf_path):
+def extract_text_hybrid(pdf_path, tess_lang="eng"):
     doc = fitz.open(pdf_path)
     page_texts = []
 
@@ -155,10 +253,10 @@ def extract_text_hybrid(pdf_path):
         if is_text_good(text):
             print(f"[SKIP OCR] Text layer used on page {page_num + 1}")
         else:
-            print(f"[OCR] OCR used on page {page_num + 1}")
+            print(f"[OCR] OCR used on page {page_num + 1} (lang={tess_lang})")
             pix = page.get_pixmap(dpi=200)
             img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-            text = pytesseract.image_to_string(img)
+            text = pytesseract.image_to_string(img, lang=tess_lang)
 
         text = clean_extracted_text(text)
 
@@ -177,15 +275,24 @@ def chunk_text(text, max_words=350):
     return [" ".join(words[i:i+max_words]) for i in range(0, len(words), max_words)]
 
 
-def summarize_with_chunks(text):
+def summarize_with_chunks(text, language="English"):
     if not text or len(text.strip()) < 80:
         return "Not enough readable text found for summarization."
+
+    tokenizer, model, lang_code = _get_model(language)
+
+    if tokenizer is None or model is None:
+        return f"Summarization is not available for {language}."
 
     chunks = chunk_text(text, 350)
     summaries = []
 
     for chunk in chunks[:3]:
         try:
+            # IndicBART requires special input format: "text </s> <2xx>"
+            if lang_code:
+                chunk = f"{chunk} </s> <2{lang_code}>"
+
             inputs = tokenizer(
                 chunk,
                 return_tensors="pt",
@@ -193,17 +300,23 @@ def summarize_with_chunks(text):
                 max_length=512
             )
 
-            summary_ids = model.generate(
-                inputs["input_ids"],
+            # IndicBART needs forced_bos_token_id for target language
+            gen_kwargs = dict(
                 num_beams=3,
                 max_length=90,
                 min_length=20,
-                early_stopping=True
+                early_stopping=True,
             )
+            if lang_code:
+                tgt_token = f"<2{lang_code}>"
+                if tgt_token in tokenizer.get_vocab():
+                    gen_kwargs["forced_bos_token_id"] = tokenizer.convert_tokens_to_ids(tgt_token)
 
+            summary_ids = model.generate(inputs["input_ids"], **gen_kwargs)
             summaries.append(tokenizer.decode(summary_ids[0], skip_special_tokens=True))
+
         except Exception as e:
-            print("Summarization error:", e)
+            print(f"Summarization error ({language}):", e)
 
     final = " ".join(summaries).strip()
     return final if final else "Could not generate summary."
@@ -420,10 +533,10 @@ def generate_exam_questions(title, content_type):
     return list(dict.fromkeys(questions))[:4]
 
 
-def build_smart_summary(section_title, text):
+def build_smart_summary(section_title, text, language="English"):
     content_type = detect_content_type(text)
     short_text = text[:2200]
-    summary_text = summarize_with_chunks(short_text)
+    summary_text = summarize_with_chunks(short_text, language=language)
 
     if not is_summary_reliable(summary_text):
         summary_text = "This section contains partially readable educational content but needs cleaner extraction."
@@ -468,22 +581,25 @@ def build_smart_summary(section_title, text):
 # MAIN BACKGROUND TASK
 # =========================================================
 @celery.task(bind=True)
-def process_book_task(self, pdf_name, pdf_path):
+def process_book_task(self, pdf_name, pdf_path, language="English"):
     try:
+        tess_lang = get_tess_lang(language)
+        print(f"[task] Processing '{pdf_name}' language={language} tess_lang={tess_lang}")
+
         # ── Build mirrored subfolder paths ──────────────────
-        summary_path   = _mirrored_json_path(SUMMARY_FOLDER,   pdf_path, pdf_name)
-        page_text_path = _mirrored_json_path(PAGE_TEXT_FOLDER, pdf_path, pdf_name)
+        summary_path   = mirror_path(SUMMARY_FOLDER,   pdf_path, pdf_name)
+        page_text_path = mirror_path(PAGE_TEXT_FOLDER, pdf_path, pdf_name)
 
         for p in [summary_path, page_text_path]:
             parent = os.path.dirname(p)
             if parent:
                 os.makedirs(parent, exist_ok=True)
         # ────────────────────────────────────────────────────
- 
+
         update_status(pdf_name, "extracting", 10, "Extracting text from PDF...", pdf_path)
- 
+
         # 1. Extract text
-        page_texts = extract_text_hybrid(pdf_path)
+        page_texts = extract_text_hybrid(pdf_path, tess_lang=tess_lang)
  
         update_status(pdf_name, "saving_pages", 30, "Saving page-wise text...", pdf_path)
  
@@ -493,9 +609,15 @@ def process_book_task(self, pdf_name, pdf_path):
             json.dump(page_text_dict, f, ensure_ascii=False, indent=2)
  
         update_status(pdf_name, "structuring", 50, "Detecting sections...", pdf_path)
- 
+
+        # 3. Filter out junk pages before section detection
+        content_pages = [p for p in page_texts if not is_junk_page(p["text"])]
+        skipped = len(page_texts) - len(content_pages)
+        if skipped:
+            print(f"[task] Skipped {skipped} junk page(s) from summarization.")
+
         # 3. Detect sections
-        sections = split_sections_with_pages(page_texts)
+        sections = split_sections_with_pages(content_pages)
         smart_sections = {}
  
         total_sections = max(len(sections), 1)
@@ -508,7 +630,7 @@ def process_book_task(self, pdf_name, pdf_path):
             if len(text.strip()) < 250:
                 continue
  
-            smart_summary = build_smart_summary(title, text[:3000])
+            smart_summary = build_smart_summary(title, text[:3000], language=language)
  
             smart_sections[title] = {
                 "type":               smart_summary["type"],
@@ -539,7 +661,7 @@ def process_book_task(self, pdf_name, pdf_path):
  
         # 4. Global summary
         full_text      = " ".join([p["text"] for p in page_texts])
-        global_summary = summarize_with_chunks(full_text[:2500])
+        global_summary = summarize_with_chunks(full_text[:2500], language=language)
  
         if not is_summary_reliable(global_summary):
             global_summary = "This book contains educational content. Some sections may need better extraction for more reliable summaries."

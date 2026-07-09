@@ -67,10 +67,19 @@ def init_db():
                 pdf_name   VARCHAR(500) UNIQUE,
                 file_path  TEXT,
                 status     VARCHAR(20)  DEFAULT 'pending',
+                language   VARCHAR(50)  DEFAULT 'English',
                 created_at TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (paper_id) REFERENCES papers(id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
+
+        # Add language column to existing pdfs table if missing
+        try:
+            cur.execute("""
+                ALTER TABLE pdfs ADD COLUMN language VARCHAR(50) DEFAULT 'English'
+            """)
+        except Exception:
+            pass  # Column already exists
 
         # Students — only used for the admin account
         cur.execute("""
@@ -82,6 +91,20 @@ def init_db():
                 programme_id INT          DEFAULT NULL,
                 semester     INT          DEFAULT NULL,
                 created_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """)
+
+        # Login logs — tracks student login/logout times
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS login_logs (
+                id           INT          PRIMARY KEY AUTO_INCREMENT,
+                username     VARCHAR(100) NOT NULL,
+                full_name    VARCHAR(255),
+                programme    VARCHAR(255),
+                semester     INT,
+                login_at     DATETIME     DEFAULT CURRENT_TIMESTAMP,
+                logout_at    DATETIME     DEFAULT NULL,
+                ip_address   VARCHAR(45)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
 
@@ -260,6 +283,32 @@ def add_student(username, password, full_name, programme_id=None, semester=None)
         return False
     finally:
         conn.close()
+
+
+# ── Login log helpers ────────────────────────────────────────
+
+def log_login(username, full_name, programme, semester, ip_address):
+    conn = get_db()
+    with conn.cursor() as cur:
+        cur.execute("""
+            INSERT INTO login_logs (username, full_name, programme, semester, ip_address)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (username, full_name, programme, semester, ip_address))
+        conn.commit()
+        log_id = cur.lastrowid
+    conn.close()
+    return log_id
+
+
+def log_logout(log_id):
+    conn = get_db()
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE login_logs SET logout_at = NOW() WHERE id = %s",
+            (log_id,)
+        )
+    conn.commit()
+    conn.close()
 
 
 def init_students_table():

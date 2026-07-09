@@ -1,0 +1,42 @@
+{
+  "global_summary": "Samir Amin is the founder of Assam Engineering College, Guwahati, Assam . He is currently working on an online food ordering system and a web app for bookings of doctor appointments . He also works on an AI Snake Game Agent with replay buffer and reward engineering .",
+  "sections": {
+    "High School": {
+      "type": "comparison",
+      "title": "High School",
+      "summary_text": "Doctor Appointment Booking System for booking doctor appointments . Food Fest (Online Food Ordering System) integrated LLaMA-based chatbot for patient assistance . AI Snake Game Agent Python, TensorFlow, Reinforcement Learning .",
+      "main_idea": "Doctor Appointment Booking System for booking doctor appointments . Food Fest (Online Food Ordering System) integrated LLaMA-based chatbot for patient assistance . AI Snake Game Agent Python, TensorFlow, Reinforcement Learning .",
+      "simple_explanation": "Doctor Appointment Booking System for booking doctor appointments . Food Fest (Online Food Ordering System) integrated LLaMA-based chatbot for patient assistance . AI Snake Game.",
+      "definitions": [],
+      "key_points": [
+        "High School Projects Doctor Appointment Booking System HTML, CSS, JavaScript, Python, LLaMA Integration Web app for booking doctor appointments.",
+        "Integrated LLaMA-based chatbot for patient assistance.",
+        "Food Fest (Online Food Ordering System) HTML, CSS, JavaScript, MySQL, PHP User Login Panel for ordering and tracking.",
+        "Admin Panel for managing menu, users, and orders.",
+        "Cart functionality and secure order management.",
+        "AI Snake Game Agent Python, TensorFlow, Reinforcement Learning DQN agent with replay buffer and reward engineering."
+      ],
+      "steps": [],
+      "formulae": [],
+      "code_snippet": [],
+      "examples": [],
+      "comparison_points": [
+        "High School Projects Doctor Appointment Booking System HTML, CSS, JavaScript, Python, LLaMA Integration Web app for booking doctor appointments.",
+        "Integrated LLaMA-based chatbot for patient assistance.",
+        "Food Fest (Online Food Ordering System) HTML, CSS, JavaScript, MySQL, PHP User Login Panel for ordering and tracking.",
+        "Admin Panel for managing menu, users, and orders.",
+        "Cart functionality and secure order management.",
+        "AI Snake Game Agent Python, TensorFlow, Reinforcement Learning DQN agent with replay buffer and reward engineering."
+      ],
+      "exam_questions": [
+        "What is High School?",
+        "Explain High School.",
+        "Compare the concepts related to High School."
+      ],
+      "short_answer": "Doctor Appointment Booking System for booking doctor appointments . Food Fest (Online Food Ordering System) integrated LLaMA-based chatbot for patient assistance . AI Snake Game Agent Python, TensorFlow, Reinforcement Learning .",
+      "long_answer": "Doctor Appointment Booking System for booking doctor appointments . Food Fest (Online Food Ordering System) integrated LLaMA-based chatbot for patient assistance . AI Snake Game Agent Python, TensorFlow, Reinforcement Learning .\n\nImportant points:\n• High School Projects Doctor Appointment Booking System HTML, CSS, JavaScript, Python, LLaMA Integration Web app for booking doctor appointments.\n• Integrated LLaMA-based chatbot for patient assistance.\n• Food Fest (Online Food Ordering System) HTML, CSS, JavaScript, MySQL, PHP User Login Panel for ordering and tracking.\n• Admin Panel for managing menu, users, and orders.\n• Cart functionality and secure order management.",
+      "start_page": 1,
+      "end_page": 1
+    }
+  }
+}

@@ -12,7 +12,27 @@ import requests
 from config import KKHSOU_API_BASE, KKHSOU_API_KEY
 from database import get_db
 
-BACHELOR_PREFIXES = {"BA", "BSC", "BCOM", "BCA", "BSW", "BPS", "BBA", "BHM", "BARC", "BLIS"}
+BACHELOR_PREFIXES = {"BA", "BSC", "BCOM", "BCA", "BSW", "BPS", "BBA", "BHM", "BARC", "BLIS",
+                     "BAA", "BEG", "BAE", "BED", "BAH", "BPH", "BSO"}
+
+# All available minor subjects — same pool for all degree programmes
+KKHSOU_MINORS = [
+    "Assamese",
+    "Economics",
+    "English",
+    "History",
+    "Philosophy",
+    "Political Science",
+    "Sanskrit",
+    "Social Work",
+    "Sociology",
+    "Education",
+    "BBA",
+    "Commerce",
+    "BCA",
+    "Journalism and Mass Communication",
+    "Mathematics",
+]
 
 def is_bachelor(prog_code):
     code = (prog_code or "").upper().replace(".", "").replace(" ", "")
@@ -139,15 +159,14 @@ def extract_minor_from_selected(api_papers, prog_code):
 # API CALLS
 # ─────────────────────────────────────────────────────────────
 
-def _headers(access_token):
+def _headers(access_token=None):
     return {
-        "Content-Type":  "application/json",
-        "X-API-KEY":     KKHSOU_API_KEY,
-        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+        "X-API-KEY":    KKHSOU_API_KEY,
     }
 
 
-def fetch_selected_papers_from_api(enrollment_no, semester, access_token):
+def fetch_selected_papers_from_api(enrollment_no, semester, access_token=None):
     url  = f"{KKHSOU_API_BASE}/api/v1/student/selected-papers"
     body = {"enrollment_no": enrollment_no, "semester": semester}
     try:
@@ -166,7 +185,7 @@ def fetch_selected_papers_from_api(enrollment_no, semester, access_token):
     return []
 
 
-def fetch_program_papers_from_api(prog_code, semester, access_token, minor=None):
+def fetch_program_papers_from_api(prog_code, semester, access_token=None, minor=None):
     """
     POST /api/v1/student/program-papers
     Returns flat list of paper dicts for the given programme+semester.
@@ -273,7 +292,7 @@ def store_papers(programme_id, semester, api_papers, prog_code, minor=None):
 # ─────────────────────────────────────────────────────────────
 
 def sync_papers_for_student(programme_id, prog_code, semester,
-                             access_token, enrollment_no):
+                             enrollment_no, access_token=None):
     if semester_has_papers(programme_id, semester):
         print(f"[paper_sync] Papers already exist for "
               f"programme_id={programme_id} sem={semester}, skipping.")

@@ -41,4 +41,4 @@ def build_upload_path(programme_code, semester, paper_name, pdf_name):
     return os.path.join(folder, f"{pdf_name}.pdf")
 
 # Dev mode — set to False in production
-USE_FAKE_LOGIN = False
+USE_FAKE_LOGIN = True

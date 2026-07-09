@@ -57,16 +57,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 
 /* ── PDF STAGE ── */
 #stage{
-  position:fixed;top:var(--top);left:0;right:0;bottom:var(--nav);
+  position:fixed;top:var(--top);left:0;right:0;bottom:0;
   overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg);
 }
-#stage.fs{top:0;bottom:0;}
+#stage.mobile-stage{bottom:var(--nav);}
 #shell{
-  display:flex;
-  width:100%;
-  min-height:100%;
-  justify-content:center;   /* centers horizontally */
-  align-items:flex-start;   /* keeps it top aligned */
+  display:flex;width:100%;min-height:100%;
+  justify-content:center;align-items:flex-start;
   padding:14px 0 20px;
 }
 #pageFrame{
@@ -77,35 +74,23 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 #pdfCanvas{display:block;}
 
 /* ── TEXT LAYER ── */
-#tl{
-  position:absolute;
-  inset:0;
-  overflow:hidden;
-  pointer-events:auto;
-  z-index:2;
-  line-height:1;
-}
-#tl span,
-#tl br{
-  color:transparent;
-  position:absolute;
-  white-space:pre;
-  cursor:text;
-  transform-origin:0% 0%;
-}
-#tl ::selection{
-  background:rgba(99,102,241,.35);
-}
+#tl{position:absolute;inset:0;overflow:hidden;pointer-events:auto;z-index:2;line-height:1;}
+#tl span,#tl br{color:transparent;position:absolute;white-space:pre;cursor:text;transform-origin:0% 0%;}
+#tl ::selection{background:rgba(99,102,241,.35);}
 
-/* ── NAV BAR ── */
+/* ── MOBILE NAV BAR ── */
 #navBar{
   position:fixed;bottom:0;left:0;right:0;z-index:500;height:var(--nav);
-  display:flex;align-items:center;justify-content:space-between;padding:0 12px;gap:8px;
+  display:none;
+  align-items:center;justify-content:space-between;padding:0 12px;gap:8px;
   background:rgba(15,23,42,0.97);border-top:1px solid var(--bdr);
   backdrop-filter:blur(20px);
-  transition:transform .3s ease,opacity .3s ease;
 }
-#navBar.hidden{transform:translateY(100%);opacity:0;pointer-events:none;}
+@media(max-width:768px){
+  #navBar{display:flex;}
+  #stage{bottom:var(--nav);}
+  #sidePanel{display:none !important;}
+}
 
 .icobtn{
   width:42px;height:42px;flex-shrink:0;
@@ -118,45 +103,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 .icobtn:hover{background:var(--surf2);}
 .icobtn:active{transform:scale(.92);}
 .icobtn:disabled{opacity:.3;cursor:not-allowed;}
-
-.pg-ctrl{
-  display:flex;align-items:center;gap:6px;
-  flex:1;justify-content:center;
-  font-size:13px;color:var(--muted);
-}
-#pgInput{
-  width:42px;text-align:center;
-  background:var(--surf);border:1px solid var(--bdr);
-  color:var(--white);border-radius:8px;
-  padding:5px 4px;font-size:13px;font-weight:700;
-}
+.pg-ctrl{display:flex;align-items:center;gap:6px;flex:1;justify-content:center;font-size:13px;color:var(--muted);}
+#pgInput{width:42px;text-align:center;background:var(--surf);border:1px solid var(--bdr);color:var(--white);border-radius:8px;padding:5px 4px;font-size:13px;font-weight:700;}
 #pgInput:focus{outline:none;border-color:var(--acc);}
-
 .zoom-row{display:flex;align-items:center;gap:4px;}
-.zbtn{
-  width:34px;height:34px;border:1px solid var(--bdr);border-radius:8px;
-  background:var(--surf);color:var(--white);font-size:18px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:background .15s;
-}
+.zbtn{width:34px;height:34px;border:1px solid var(--bdr);border-radius:8px;background:var(--surf);color:var(--white);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
 .zbtn:hover{background:var(--surf2);}
 #zlabel{font-size:11px;color:var(--muted);min-width:36px;text-align:center;}
-
-#aiBtn{
-  width:42px;height:42px;flex-shrink:0;border:none;border-radius:50%;
-  background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;
-  font-size:18px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 16px rgba(99,102,241,.5);
-  transition:transform .15s,box-shadow .15s;
-}
-#aiBtn:hover{transform:scale(1.08);box-shadow:0 6px 22px rgba(99,102,241,.65);}
+#aiBtn{width:42px;height:42px;flex-shrink:0;border:none;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+#aiBtn:hover{transform:scale(1.08);}
 
 /* ── AI DRAWER ── */
 #overlay{display:none;position:fixed;inset:0;z-index:440;background:rgba(0,0,0,.45);}
 #overlay.on{display:block;}
 #aiDrawer{
-  position:fixed;bottom:var(--nav);left:0;right:0;z-index:450;
+  position:fixed;bottom:0;left:0;right:0;z-index:450;
   background:var(--surf);border-top:1px solid var(--bdr);
   border-radius:var(--r) var(--r) 0 0;
   padding:16px 14px 18px;
@@ -164,157 +125,186 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
   transition:transform .3s cubic-bezier(.4,0,.2,1);
   box-shadow:0 -12px 40px rgba(0,0,0,.5);
 }
+@media(max-width:768px){
+  #aiDrawer{bottom:var(--nav);}
+}
 #aiDrawer.on{transform:translateY(0);}
 .dr-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;}
 .tool-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
-.ti{
-  display:flex;flex-direction:column;align-items:center;gap:5px;
-  background:rgba(255,255,255,0.04);border:1px solid var(--bdr);
-  border-radius:10px;padding:10px 6px;cursor:pointer;
-  transition:background .15s,transform .1s;
-}
+.ti{display:flex;flex-direction:column;align-items:center;gap:5px;background:rgba(255,255,255,0.04);border:1px solid var(--bdr);border-radius:10px;padding:10px 6px;cursor:pointer;transition:background .15s,transform .1s;}
 .ti:hover{background:rgba(255,255,255,.09);}
 .ti:active{transform:scale(.94);}
 .ti-icon{font-size:20px;line-height:1;}
 .ti-label{font-size:10px;color:var(--muted);font-weight:600;text-align:center;}
 
 /* ── MODAL ── */
-.modal{
-  display:none;position:fixed;inset:0;z-index:700;
-  background:rgba(0,0,0,.72);padding:10px;
-  align-items:flex-end;justify-content:center;
-}
+.modal{display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.72);padding:10px;align-items:flex-end;justify-content:center;}
 .modal.on{display:flex;}
-.msheet{
-  background:var(--surf);border-radius:18px 18px 14px 14px;
-  width:100%;max-width:680px;max-height:92vh;overflow-y:auto;
-  border:1px solid var(--bdr);
-}
-.mhdr{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:16px 18px 14px;
-  position:sticky;top:0;background:var(--surf);
-  border-bottom:1px solid var(--bdr);z-index:1;
-}
+.msheet{background:var(--surf);border-radius:18px 18px 14px 14px;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;border:1px solid var(--bdr);}
+.mhdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 14px;position:sticky;top:0;background:var(--surf);border-bottom:1px solid var(--bdr);z-index:1;}
 .mhdr h2{font-size:15px;font-weight:700;}
-.mcls{
-  width:30px;height:30px;border-radius:50%;
-  background:rgba(255,255,255,.08);border:none;
-  color:var(--white);font-size:16px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-}
+.mcls{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:var(--white);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 .mbody{padding:14px 18px 22px;}
-
-/* chips */
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
 .chip{background:rgba(99,102,241,.14);color:#a5b4fc;border:1px solid rgba(99,102,241,.28);padding:4px 12px;border-radius:999px;font-size:12px;font-weight:600;}
-
-/* quick btns */
 .qgrid{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0;}
 .qb{padding:7px 13px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--bdr);color:var(--white);font-size:12px;font-weight:600;cursor:pointer;transition:background .15s;}
 .qb:hover{background:rgba(255,255,255,.12);}
 .qb.on{background:var(--acc);border-color:var(--acc);}
-
-/* answer */
 .abox{background:rgba(255,255,255,.04);border:1px solid var(--bdr);border-radius:10px;padding:14px;font-size:14px;line-height:1.75;white-space:pre-wrap;min-height:70px;color:var(--white);}
-
-/* ask row */
 .askrow{display:flex;gap:8px;margin:12px 0;}
 .askrow input{flex:1;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid var(--bdr);color:var(--white);font-size:14px;}
 .askrow input:focus{outline:none;border-color:var(--acc);}
 .askrow input::placeholder{color:var(--muted);}
 .askbtn{padding:10px 16px;border:none;border-radius:10px;background:var(--acc);color:#fff;font-weight:700;font-size:13px;cursor:pointer;}
-
-/* mode tabs */
 .mtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
 .mt{padding:5px 13px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--bdr);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;}
 .mt.on{background:var(--acc);color:#fff;border-color:var(--acc);}
-
-/* confidence */
 .crow{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0;}
 .cbadge{padding:3px 11px;border-radius:999px;font-size:12px;font-weight:700;}
 .ch{background:rgba(34,197,94,.14);color:#86efac;}
 .cm{background:rgba(234,179,8,.14);color:#fde047;}
 .cl{background:rgba(239,68,68,.14);color:#fca5a5;}
-
-/* source */
 .srcbox{background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.18);border-radius:10px;padding:10px 12px;font-size:13px;color:#fde68a;margin-top:10px;line-height:1.6;}
-
-/* followups */
 .fulist{display:flex;flex-direction:column;gap:7px;margin-top:12px;}
 .fubtn{text-align:left;padding:9px 13px;background:rgba(255,255,255,.05);border:1px solid var(--bdr);border-radius:10px;color:var(--white);font-size:13px;cursor:pointer;transition:background .15s;}
 .fubtn:hover{background:rgba(255,255,255,.1);}
-
-/* lists */
 .slist{padding-left:18px;}
 .slist li{margin-bottom:5px;font-size:14px;line-height:1.6;}
 .fbox,.cbox{background:rgba(0,0,0,.3);border:1px solid var(--bdr);border-radius:10px;padding:11px;font-family:'Courier New',monospace;font-size:13px;margin-top:6px;white-space:pre-wrap;overflow-x:auto;}
 .loading-txt{color:var(--muted);font-style:italic;font-size:13px;}
 
 /* ── VIDEO PANEL ── */
-/* ── VIDEO PANEL ── */
 #vp{
-  display:none;position:fixed;
-  left:10px;bottom:calc(var(--nav)+10px);z-index:600;
-  width:min(380px,calc(100vw - 20px));
-  max-height:68vh;overflow-y:auto;
-  background:#ffffff;
-  border:1px solid rgba(0,0,0,0.10);
-  border-radius:16px;padding:16px;
-  box-shadow:0 8px 32px rgba(0,0,0,0.18);
+  display:none;position:fixed;left:10px;bottom:20px;z-index:600;
+  width:min(380px,calc(100vw - 20px));max-height:68vh;overflow-y:auto;
+  background:#ffffff;border:1px solid rgba(0,0,0,0.10);
+  border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,0.18);
 }
-.vphdr{
-  display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:14px;
-  padding-bottom:12px;
-  border-bottom:1px solid rgba(0,0,0,0.08);
-}
-.vphdr h3{
-  font-size:15px;font-weight:700;
-  color:#1a1a2e;
-}
-.vpcls{
-  background:rgba(0,0,0,0.06);border:none;
-  color:#555;font-size:18px;cursor:pointer;
-  width:28px;height:28px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  transition:background .15s;
-}
+.vphdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(0,0,0,0.08);}
+.vphdr h3{font-size:15px;font-weight:700;color:#1a1a2e;}
+.vpcls{background:rgba(0,0,0,0.06);border:none;color:#555;font-size:18px;cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
 .vpcls:hover{background:rgba(0,0,0,0.12);}
-.vc{
-  margin-bottom:16px;
-  background:#f8f9fb;
-  border:1px solid rgba(0,0,0,0.07);
-  border-radius:12px;
-  overflow:hidden;
-}
+.vc{margin-bottom:16px;background:#f8f9fb;border:1px solid rgba(0,0,0,0.07);border-radius:12px;overflow:hidden;}
 .vc:last-child{margin-bottom:0;}
 .vc-info{padding:10px 12px 8px;}
-.vc h4{
-  font-size:13px;font-weight:700;
-  color:#1a1a2e;
-  margin-bottom:3px;
-  line-height:1.4;
-  display:-webkit-box;-webkit-line-clamp:2;
-  -webkit-box-orient:vertical;overflow:hidden;
-}
-.vc p{
-  font-size:11px;font-weight:600;
-  color:#6366f1;
-  margin-bottom:0;
-  text-transform:uppercase;letter-spacing:0.05em;
-}
-.vc iframe{
-  width:100%;height:185px;
-  display:block;border:none;
+.vc h4{font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:3px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.vc p{font-size:11px;font-weight:600;color:#6366f1;margin-bottom:0;text-transform:uppercase;letter-spacing:0.05em;}
+.vc iframe{width:100%;height:185px;display:block;border:none;}
+
+/* ── DESKTOP SIDE PANEL ── */
+#sidePanel{
+  position:fixed;
+  z-index:600;
+  /* default position — JS will override after first drag */
+  right:20px;
+  top:50%;
+  transform:translateY(-50%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  background:rgba(17,25,45,0.92);
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:20px;
+  padding:8px 7px 10px;
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  user-select:none;
+  min-width:52px;
+  /* subtle inner glow */
+  box-shadow:0 0 0 1px rgba(255,255,255,0.04) inset, 0 24px 48px rgba(0,0,0,0.5);
 }
 
-/* ── MOBILE ── */
-@media(max-width:480px){
-  #bookTitle{max-width:30vw;}
-  #zlabel{display:none;}
-  .zoom-row{gap:2px;}
-  .tool-grid{grid-template-columns:repeat(4,1fr);}
+/* drag handle */
+.sp-handle{
+  width:28px;height:4px;
+  background:rgba(255,255,255,0.15);
+  border-radius:999px;
+  cursor:grab;
+  margin-bottom:4px;
+  flex-shrink:0;
+  transition:background .15s;
+}
+.sp-handle:hover{background:rgba(255,255,255,0.3);}
+.sp-handle:active{cursor:grabbing;}
+
+.sp-divider{
+  width:32px;height:1px;
+  background:rgba(255,255,255,0.07);
+  margin:2px 0;
+  flex-shrink:0;
+}
+
+/* individual buttons */
+.sp-btn{
+  width:44px;height:44px;
+  border-radius:14px;
+  border:1px solid rgba(255,255,255,0.07);
+  background:rgba(255,255,255,0.04);
+  color:var(--white);
+  font-size:16px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;
+  gap:2px;
+  flex-shrink:0;
+  transition:background .15s, border-color .15s, transform .1s;
+  position:relative;
+}
+.sp-btn:hover{
+  background:rgba(255,255,255,0.10);
+  border-color:rgba(255,255,255,0.15);
+}
+.sp-btn:active{transform:scale(.91);}
+.sp-btn:disabled{opacity:.25;cursor:not-allowed;transform:none;}
+
+.sp-lbl{
+  font-size:8px;
+  font-weight:700;
+  letter-spacing:.06em;
+  color:var(--muted);
+  line-height:1;
+  text-transform:uppercase;
+}
+
+/* page group */
+.sp-pg{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:6px 0 4px;
+  width:100%;
+}
+.sp-pg input{
+  width:36px;text-align:center;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.10);
+  color:var(--white);border-radius:9px;
+  padding:5px 2px;font-size:13px;font-weight:700;
+  transition:border-color .15s;
+}
+.sp-pg input:focus{outline:none;border-color:var(--acc);}
+.sp-pg .sp-of{font-size:10px;color:var(--muted);font-weight:600;}
+
+/* zoom group */
+.sp-zoom{
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  width:100%;
+}
+.sp-zlbl{font-size:10px;color:var(--muted);font-weight:700;min-width:36px;text-align:center;padding:2px 0;}
+
+/* AI button accent */
+.sp-btn.sp-ai{
+  background:linear-gradient(145deg, #6366f1, #8b5cf6);
+  border-color:rgba(139,92,246,0.4);
+  font-size:17px;
+}
+.sp-btn.sp-ai:hover{opacity:.88;background:linear-gradient(145deg,#6366f1,#8b5cf6);}
+.sp-btn.sp-ai .sp-lbl{color:rgba(255,255,255,.55);}
+
+/* active TTS state */
+.sp-btn.sp-tts-on{
+  background:linear-gradient(145deg, #6366f1, #8b5cf6);
+  border-color:rgba(139,92,246,0.4);
 }
 </style>
 </head>
@@ -323,7 +313,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 <!-- TOP BAR -->
 <header id="topBar">
   <div class="tb-left">
-    <a href="/books" class="back-btn">← Back</a>
+    <a href="/my-courses" class="back-btn">← Back</a>
     <div id="bookTitle">{{ pdf_name }}</div>
   </div>
   <div class="pg-badge" id="pgBadge">
@@ -332,7 +322,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
 </header>
 
 <div id="pvBanner">Preview Mode — Login to read the full book</div>
-<div id="guestBanner" style="display:none;position:fixed;top:calc(var(--top)+8px);left:0;right:0;z-index:600;background:rgba(15,23,42,0.92);border-bottom:1px solid var(--bdr);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+<div id="guestBanner" style="display:none;position:fixed;top:calc(var(--top)+8px);left:0;right:0;z-index:600;background:rgba(15,23,42,0.92);border-bottom:1px solid var(--bdr);padding:10px 16px;align-items:center;justify-content:space-between;gap:10px;">
   <span style="font-size:13px;color:#fbbf24;font-weight:600;">📖 Guest Preview — Showing page 1–2 of <span id="guestTot">?</span>. <a href="/login" style="color:#a5b4fc;text-decoration:underline;">Sign in</a> to read all pages &amp; unlock AI features.</span>
 </div>
 
@@ -346,28 +336,72 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
   </div>
 </div>
 
-<!-- NAV BAR -->
+<!-- MOBILE NAV BAR -->
 <nav id="navBar">
   <button class="icobtn" id="btnPrev" onclick="prevPage()" title="Previous">&#9664;</button>
-
   <div class="pg-ctrl">
     <input id="pgInput" type="number" min="1" value="1" onchange="jumpPage(this.value)"/>
     <span>/ <span id="pgN">?</span></span>
   </div>
-
   <div class="zoom-row">
     <button class="zbtn" onclick="zoomOut()" title="Zoom out">−</button>
     <span id="zlabel">100%</span>
     <button class="zbtn" onclick="zoomIn()" title="Zoom in">+</button>
   </div>
-
   <button class="icobtn" id="btnNext" onclick="nextPage()" title="Next">&#9654;</button>
-  <button id="ttsBtn" class="icobtn" onclick="toggleTTS()" 
-  aria-label="Read page aloud" aria-pressed="false" title="Read aloud (S)">
-  &#128266;
-  </button>
+  <button id="ttsBtn" class="icobtn" onclick="toggleTTS()" aria-label="Read page aloud" aria-pressed="false" title="Read aloud (S)">&#128266;</button>
   <button id="aiBtn" onclick="toggleDrawer()" title="AI Tools">✦</button>
 </nav>
+
+<!-- DESKTOP SIDE PANEL -->
+<div id="sidePanel">
+  <div class="sp-handle" id="spHandle" title="Drag to move"></div>
+
+  <!-- Prev / Next -->
+  <button class="sp-btn" id="spPrev" onclick="prevPage()" title="Previous page (←)">
+    <span style="font-size:13px;">▲</span>
+    <span class="sp-lbl">PREV</span>
+  </button>
+  <button class="sp-btn" id="spNext" onclick="nextPage()" title="Next page (→)">
+    <span style="font-size:13px;">▼</span>
+    <span class="sp-lbl">NEXT</span>
+  </button>
+
+  <div class="sp-divider"></div>
+
+  <!-- Page input -->
+  <div class="sp-pg">
+    <input id="spPgInput" type="number" min="1" value="1" onchange="jumpPage(this.value)" title="Jump to page"/>
+    <span class="sp-of" id="spPgOf">/ ?</span>
+  </div>
+
+  <div class="sp-divider"></div>
+
+  <!-- Zoom -->
+  <div class="sp-zoom">
+    <button class="sp-btn" onclick="zoomIn()" title="Zoom in (+)">
+      <span style="font-size:18px;line-height:1;">+</span>
+    </button>
+    <span class="sp-zlbl" id="spZlabel">100%</span>
+    <button class="sp-btn" onclick="zoomOut()" title="Zoom out (-)">
+      <span style="font-size:18px;line-height:1;">−</span>
+    </button>
+  </div>
+
+  <div class="sp-divider"></div>
+
+  <!-- TTS -->
+  <button class="sp-btn" id="spTtsBtn" onclick="toggleTTS()" title="Read aloud (S)">
+    <span style="font-size:16px;">🔊</span>
+    <span class="sp-lbl">READ</span>
+  </button>
+
+  <!-- AI -->
+  <button class="sp-btn sp-ai" onclick="toggleDrawer()" title="AI Tools">
+    <span style="font-size:16px;">✦</span>
+    <span class="sp-lbl">AI</span>
+  </button>
+</div>
 
 <!-- AI DRAWER -->
 <div id="overlay" onclick="closeDrawer()"></div>
@@ -380,15 +414,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);
     <div class="ti" onclick="cd();setFit('width')"><span class="ti-icon">↔</span><span class="ti-label">Fit Width</span></div>
     <div class="ti" onclick="cd();setFit('page')"><span class="ti-icon">⬜</span><span class="ti-label">Fit Page</span></div>
     <div class="ti" onclick="cd();setFit('readable')"><span class="ti-icon">📖</span><span class="ti-label">Readable</span></div>
-    <!-- <div class="ti" onclick="cd();toggleUI()"><span class="ti-icon">👁</span><span class="ti-label">Hide UI</span></div> -->
-    <div class="ti" onclick="cd();openGoToPage()">
-    <span class="ti-icon">🔖</span>
-    <span class="ti-label">Go to Page</span>
-    </div>
-    <div class="ti" onclick="cd();openTTSPanel()">
-    <span class="ti-icon">&#128266;</span>
-    <span class="ti-label">Read Aloud</span>
-  </div>
+    <div class="ti" onclick="cd();openGoToPage()"><span class="ti-icon">🔖</span><span class="ti-label">Go to Page</span></div>
+    <div class="ti" onclick="cd();openTTSPanel()"><span class="ti-icon">&#128266;</span><span class="ti-label">Read Aloud</span></div>
   </div>
 </div>
 
@@ -418,9 +445,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc=
 
 const previewMode=JSON.parse('{{ preview | tojson | safe }}');
 const guestMode=JSON.parse('{{ guest | tojson | safe }}');
-const GUEST_PAGE_LIMIT = 2;
-const pdfName = "{{ pdf_name }}";   // for AI APIs
-const filePath = "{{ file_path }}"; // for PDF loading
+const GUEST_PAGE_LIMIT=2;
+const pdfName="{{ pdf_name }}";
+const filePath="{{ file_path }}";
 
 const canvas=document.getElementById("pdfCanvas");
 const ctx=canvas.getContext("2d",{alpha:false});
@@ -441,7 +468,11 @@ fetch(`/summary_json/${pdfName}`).then(r=>r.json())
 pdfjsLib.getDocument(`/pdf/${filePath}`).promise.then(doc=>{
   pdfDoc=doc; total=doc.numPages;
   ["pgTot","pgN"].forEach(id=>document.getElementById(id).textContent=total);
-  document.getElementById("pgInput").max=guestMode ? GUEST_PAGE_LIMIT : total;
+  document.getElementById("pgInput").max=guestMode?GUEST_PAGE_LIMIT:total;
+  const spOf=document.getElementById("spPgOf");
+  if(spOf) spOf.textContent="/ "+total;
+  const spPg=document.getElementById("spPgInput");
+  if(spPg) spPg.max=guestMode?GUEST_PAGE_LIMIT:total;
   if(guestMode){
     document.getElementById("guestBanner").style.display="flex";
     document.getElementById("guestTot").textContent=total;
@@ -454,253 +485,202 @@ function baseScale(vp){
   const sw=stage.clientWidth, sh=stage.clientHeight;
   if(fit==="width") return sw/vp.width;
   if(fit==="page")  return Math.min(sw/vp.width,(sh-40)/vp.height);
-  /* readable: target ~700px on mobile so text is comfortable */
   const mob=window.innerWidth<768;
-  if(mob){ const t=Math.max(sw*1.5,700); return t/vp.width; }
+  if(mob){const t=Math.max(sw*1.5,700);return t/vp.width;}
   return Math.min(sw-48,960)/vp.width;
 }
 
 /* ── RENDER ── */
-async function renderPage(n, speakAfter = false){
-  if(previewMode&&n>3){
-    alert("Preview limit. Login to continue.");
-    window.location.href="/login";
-    return;
-  }
-  if(guestMode && n > GUEST_PAGE_LIMIT){
-    showGuestWall();
-    return;
-  }
+async function renderPage(n,speakAfter=false){
+  if(previewMode&&n>3){alert("Preview limit. Login to continue.");window.location.href="/login";return;}
+  if(guestMode&&n>GUEST_PAGE_LIMIT){showGuestWall();return;}
   if(!pdfDoc) return;
+  if(rt){try{rt.cancel();}catch(e){}}
+  if(tlt){try{tlt.cancel();}catch(e){}}
 
-  if(rt){ try{ rt.cancel(); }catch(e){} }
-  if(tlt){ try{ tlt.cancel(); }catch(e){} }
+  const page=await pdfDoc.getPage(n);
+  const rawVP=page.getViewport({scale:1});
+  const base=baseScale(rawVP);
+  const final=base*zoom;
+  const dpr=Math.min(window.devicePixelRatio||1,3);
+  const vp=page.getViewport({scale:final});
+  const dw=vp.width, dh=vp.height;
 
-  const page = await pdfDoc.getPage(n);
-  const rawVP = page.getViewport({ scale: 1 });
-  const base = baseScale(rawVP);
-  const final = base * zoom;
+  canvas.width=Math.floor(dw*dpr);
+  canvas.height=Math.floor(dh*dpr);
+  canvas.style.width=`${dw}px`;
+  canvas.style.height=`${dh}px`;
+  frame.style.width=`${dw}px`;
+  frame.style.height=`${dh}px`;
+  shell.style.minWidth=`${dw+32}px`;
+  frame.style.setProperty("--scale-factor",final);
 
-  /* device pixel ratio for sharp rendering */
-  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,dw,dh);
+  ctx.imageSmoothingEnabled=true;
+  ctx.imageSmoothingQuality="high";
 
-  /* CSS/display viewport */
-  const vp = page.getViewport({ scale: final });
-
-  const dw = vp.width;
-  const dh = vp.height;
-
-  /* Canvas backing store */
-  canvas.width = Math.floor(dw * dpr);
-  canvas.height = Math.floor(dh * dpr);
-  canvas.style.width = `${dw}px`;
-  canvas.style.height = `${dh}px`;
-
-  frame.style.width = `${dw}px`;
-  frame.style.height = `${dh}px`;
-  shell.style.minWidth = `${dw + 32}px`;
-
-  /* IMPORTANT: PDF.js text layer needs this */
-  frame.style.setProperty("--scale-factor", final);
-
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, dw, dh);
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-
-  rt = page.render({
-    canvasContext: ctx,
-    viewport: vp
-  });
+  rt=page.render({canvasContext:ctx,viewport:vp});
+  try{await rt.promise;}catch(e){if(e?.name!=="RenderingCancelledException")console.error(e);return;}
 
   try{
-    await rt.promise;
-  }catch(e){
-    if(e?.name !== "RenderingCancelledException") console.error(e);
-    return;
-  }
-
-  /* text layer */
-  try{
-    const tc = await page.getTextContent();
-
-    tlEl.innerHTML = "";
-    tlEl.style.width = `${dw}px`;
-    tlEl.style.height = `${dh}px`;
-    tlEl.style.setProperty("--scale-factor", final);
-
-    tlt = pdfjsLib.renderTextLayer({
-      textContentSource: tc,
-      container: tlEl,
-      viewport: vp,
-      textDivs: []
-    });
-
+    const tc=await page.getTextContent();
+    tlEl.innerHTML="";
+    tlEl.style.width=`${dw}px`;
+    tlEl.style.height=`${dh}px`;
+    tlEl.style.setProperty("--scale-factor",final);
+    tlt=pdfjsLib.renderTextLayer({textContentSource:tc,container:tlEl,viewport:vp,textDivs:[]});
     await tlt.promise;
-  }catch(e){
-    console.error("Text layer error:", e);
-  }
+  }catch(e){console.error("Text layer:",e);}
 
-  pg = n;
-  document.getElementById("pgTop").textContent = n;
-  document.getElementById("pgInput").value = n;
-  document.getElementById("btnPrev").disabled = n <= 1;
-  document.getElementById("btnNext").disabled = n >= total || (guestMode && n >= GUEST_PAGE_LIMIT);
-  document.getElementById("zlabel").textContent = Math.round(zoom * 100) + "%";
+  pg=n;
+  document.getElementById("pgTop").textContent=n;
+  document.getElementById("pgInput").value=n;
+  document.getElementById("btnPrev").disabled=n<=1;
+  document.getElementById("btnNext").disabled=n>=total||(guestMode&&n>=GUEST_PAGE_LIMIT);
+  document.getElementById("zlabel").textContent=Math.round(zoom*100)+"%";
 
-  if(zoom <= 1.05){
-    stage.scrollTop = 0;
-    stage.scrollLeft = Math.max((dw - stage.clientWidth) / 2, 0);
-  }
+  const spz=document.getElementById("spZlabel");
+  if(spz) spz.textContent=Math.round(zoom*100)+"%";
+  const spPg=document.getElementById("spPgInput");
+  if(spPg) spPg.value=n;
+  const spPrev=document.getElementById("spPrev");
+  const spNext=document.getElementById("spNext");
+  if(spPrev) spPrev.disabled=n<=1;
+  if(spNext) spNext.disabled=n>=total||(guestMode&&n>=GUEST_PAGE_LIMIT);
 
-    if(speakAfter && ttsActive){
-    stopTTS(false);
-    setTimeout(() => startTTS(n), 400); // small delay lets canvas settle
+  if(zoom<=1.05){
+    stage.scrollTop=0;
+    stage.scrollLeft=Math.max((dw-stage.clientWidth)/2,0);
   }
+  if(speakAfter&&ttsActive){stopTTS(false);setTimeout(()=>startTTS(n),400);}
 }
 
 /* ── NAV ── */
 function nextPage(){
-  if(pdfDoc && pg < total){
-    if(guestMode && pg >= GUEST_PAGE_LIMIT){ showGuestWall(); return; }
-    stage.scrollTop = 0;
-    stage.scrollLeft = 0;
-    renderPage(pg + 1, true); // true = auto-speak if TTS active
+  if(pdfDoc&&pg<total){
+    if(guestMode&&pg>=GUEST_PAGE_LIMIT){showGuestWall();return;}
+    stage.scrollTop=0;stage.scrollLeft=0;renderPage(pg+1,true);
   }
 }
-
 function prevPage(){
-  if(pdfDoc && pg > 1){
-    stage.scrollTop = 0;
-    stage.scrollLeft = 0;
-    renderPage(pg - 1, true);
-  }
+  if(pdfDoc&&pg>1){stage.scrollTop=0;stage.scrollLeft=0;renderPage(pg-1,true);}
 }
-
 function jumpPage(v){
-  const n = parseInt(v);
-  if(guestMode && n > GUEST_PAGE_LIMIT){ showGuestWall(); document.getElementById("pgInput").value=pg; return; }
-  if(!isNaN(n) && n >= 1 && n <= total) renderPage(n, true);
+  const n=parseInt(v);
+  if(guestMode&&n>GUEST_PAGE_LIMIT){showGuestWall();document.getElementById("pgInput").value=pg;return;}
+  if(!isNaN(n)&&n>=1&&n<=total) renderPage(n,true);
 }
 function zoomIn(){zoom=Math.min(zoom+0.25,4);renderPage(pg);}
 function zoomOut(){zoom=Math.max(zoom-0.25,0.5);renderPage(pg);}
 function setFit(m){fit=m;zoom=1;stage.scrollTop=0;stage.scrollLeft=0;renderPage(pg);}
 
-/* ── UI ── */
-// function toggleUI(){
-//   uiOn=!uiOn;
-//   document.getElementById("topBar").classList.toggle("hidden",!uiOn);
-//   document.getElementById("navBar").classList.toggle("hidden",!uiOn);
-//   stage.classList.toggle("fs",!uiOn);
-// }
-frame.addEventListener("click",e=>{
-  if(e.target.closest("#aiDrawer")||e.target.closest("#navBar")||e.target.closest("#topBar")) return;
-  if(window.getSelection().toString().length>0) return;
-  // toggleUI();
-});
-// Remove the old touchend listener on stage and replace with this:
-let touchStartX = 0;
-let touchStartY = 0;
-let touchStartTime = 0;
-
-stage.addEventListener("touchstart", e => {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-  touchStartTime = Date.now();
-}, { passive: true });
-
-stage.addEventListener("touchend", e => {
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  const dy = e.changedTouches[0].clientY - touchStartY;
-  const dt = Date.now() - touchStartTime;
-
-  const absDx = Math.abs(dx);
-  const absDy = Math.abs(dy);
-
-  // Double-tap to zoom (keep your existing behaviour)
-  const now = Date.now();
-  const gap = now - lastTap;
-  if (gap < 300 && gap > 0 && absDx < 20 && absDy < 20) {
-    zoom = zoom < 1.8 ? 2 : 1;
-    if (zoom === 1) fit = "readable";
-    renderPage(pg);
-    e.preventDefault();
-    lastTap = 0; // reset so triple-tap doesn't re-trigger
-    return;
+/* ── TOUCH / KEYBOARD ── */
+let touchStartX=0,touchStartY=0,touchStartTime=0;
+stage.addEventListener("touchstart",e=>{
+  touchStartX=e.touches[0].clientX;touchStartY=e.touches[0].clientY;touchStartTime=Date.now();
+},{passive:true});
+stage.addEventListener("touchend",e=>{
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  const dy=e.changedTouches[0].clientY-touchStartY;
+  const dt=Date.now()-touchStartTime;
+  const absDx=Math.abs(dx),absDy=Math.abs(dy);
+  const now=Date.now(),gap=now-lastTap;
+  if(gap<300&&gap>0&&absDx<20&&absDy<20){
+    zoom=zoom<1.8?2:1;if(zoom===1)fit="readable";renderPage(pg);e.preventDefault();lastTap=0;return;
   }
-  lastTap = now;
-
-  // Swipe — must be fast (<350ms), mostly horizontal, and long enough (>50px)
-  if (dt > 350) return;           // too slow = scroll, not swipe
-  if (absDx < 50) return;         // too short
-  if (absDy > absDx * 0.8) return; // too vertical (user is scrolling)
-
-  // If zoomed in and page is wider than screen, only swipe at edges
-  if (zoom > 1.05) {
-    const atLeft  = stage.scrollLeft < 10;
-    const atRight = stage.scrollLeft + stage.clientWidth >= stage.scrollWidth - 10;
-    if (dx < 0 && !atRight) return; // swiping left but not at right edge
-    if (dx > 0 && !atLeft)  return; // swiping right but not at left edge
+  lastTap=now;
+  if(dt>350||absDx<50||absDy>absDx*0.8) return;
+  if(zoom>1.05){
+    const atLeft=stage.scrollLeft<10;
+    const atRight=stage.scrollLeft+stage.clientWidth>=stage.scrollWidth-10;
+    if(dx<0&&!atRight) return;
+    if(dx>0&&!atLeft) return;
   }
-
-  if (dx < 0) {
-    nextPage(); // swipe left → next page
-  } else {
-    prevPage(); // swipe right → previous page
-  }
-
+  if(dx<0){nextPage();}else{prevPage();}
   e.preventDefault();
-}, { passive: false });
-
+},{passive:false});
 
 document.addEventListener("keydown",e=>{
   if(e.key==="ArrowRight"||e.key==="PageDown") nextPage();
   if(e.key==="ArrowLeft"||e.key==="PageUp") prevPage();
-  if(e.key==="Escape"){closeModal();closeDrawer();if(!uiOn)toggleUI();}
+  if(e.key==="Escape"){closeModal();closeDrawer();}
   if(e.key==="+"||e.key==="=") zoomIn();
   if(e.key==="-") zoomOut();
   if(e.key==="Enter"){const i=document.getElementById("askInput");if(i&&document.activeElement===i) askQ();}
 });
 window.addEventListener("resize",()=>{clearTimeout(rTimer);rTimer=setTimeout(()=>{if(pdfDoc)renderPage(pg);},150);});
 
-/* ── GUEST WALL ── */
+/* ── DRAGGABLE SIDE PANEL ── */
+(function(){
+  const panel=document.getElementById("sidePanel");
+  const handle=document.getElementById("spHandle");
+  if(!panel||!handle) return;
+
+  let dragging=false,ox=0,oy=0;
+
+  function startDrag(cx,cy){
+    dragging=true;
+    const rect=panel.getBoundingClientRect();
+    ox=cx-rect.left;
+    oy=cy-rect.top;
+    panel.style.transform="none";
+    panel.style.transition="none";
+    handle.style.cursor="grabbing";
+    document.body.style.userSelect="none";
+  }
+
+  function moveDrag(cx,cy){
+    if(!dragging) return;
+    let x=cx-ox, y=cy-oy;
+    const pw=panel.offsetWidth, ph=panel.offsetHeight;
+    x=Math.max(8,Math.min(window.innerWidth-pw-8,x));
+    y=Math.max(8,Math.min(window.innerHeight-ph-8,y));
+    panel.style.left=x+"px";
+    panel.style.top=y+"px";
+    panel.style.right="auto";
+  }
+
+  function endDrag(){
+    if(!dragging) return;
+    dragging=false;
+    handle.style.cursor="grab";
+    panel.style.transition="";
+    document.body.style.userSelect="";
+  }
+
+  handle.addEventListener("mousedown",e=>{e.preventDefault();startDrag(e.clientX,e.clientY);});
+  document.addEventListener("mousemove",e=>{moveDrag(e.clientX,e.clientY);});
+  document.addEventListener("mouseup",endDrag);
+
+  handle.addEventListener("touchstart",e=>{e.preventDefault();const t=e.touches[0];startDrag(t.clientX,t.clientY);},{passive:false});
+  document.addEventListener("touchmove",e=>{if(dragging){e.preventDefault();const t=e.touches[0];moveDrag(t.clientX,t.clientY);}},{passive:false});
+  document.addEventListener("touchend",endDrag);
+})();
+
+/* ── GUEST / PREVIEW ── */
 function showGuestWall(){
   openModal("Sign In to Continue Reading",`
     <div style="text-align:center;padding:10px 0 6px;">
       <div style="font-size:48px;margin-bottom:14px;">🔒</div>
-      <p style="font-size:15px;font-weight:600;color:var(--white);margin-bottom:8px;">
-        You've reached the guest preview limit.
-      </p>
+      <p style="font-size:15px;font-weight:600;color:var(--white);margin-bottom:8px;">You've reached the guest preview limit.</p>
       <p style="font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.6;">
         This book has <strong style="color:var(--white)">${total} pages</strong>.
-        Sign in with your student account to read all pages and unlock AI features like
-        Study Helper, Ask Book, Videos, and Read Aloud.
+        Sign in to read all pages and unlock AI features.
       </p>
-      <a href="/login" style="display:inline-block;padding:12px 28px;background:var(--acc);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;letter-spacing:.02em;">
-        Sign In
-      </a>
-      <p style="font-size:12px;color:var(--muted);margin-top:16px;">
-        Don't have an account? Contact your programme coordinator.
-      </p>
-    </div>
-  `);
+      <a href="/login" style="display:inline-block;padding:12px 28px;background:var(--acc);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">Sign In</a>
+      <p style="font-size:12px;color:var(--muted);margin-top:16px;">Don't have an account? Contact your programme coordinator.</p>
+    </div>`);
 }
-
 function guestBlock(){
   openModal("Feature Locked",`
     <div style="text-align:center;padding:10px 0 6px;">
       <div style="font-size:40px;margin-bottom:12px;">✦</div>
       <p style="font-size:15px;font-weight:600;color:var(--white);margin-bottom:8px;">AI Tools require sign-in</p>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">
-        Study Helper, Ask Book, Videos, and Read Aloud are available to registered students.
-      </p>
-      <a href="/login" style="display:inline-block;padding:11px 26px;background:var(--acc);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">
-        Sign In to Unlock
-      </a>
-    </div>
-  `);
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;">Study Helper, Ask Book, Videos, and Read Aloud are available to registered students.</p>
+      <a href="/login" style="display:inline-block;padding:11px 26px;background:var(--acc);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">Sign In to Unlock</a>
+    </div>`);
 }
-
 
 function toggleDrawer(){
   document.getElementById("aiDrawer").classList.toggle("on");
@@ -724,8 +704,7 @@ document.getElementById("modal").addEventListener("click",e=>{if(e.target===docu
 /* ── UTILS ── */
 function norm(t){return(t||"").toLowerCase().replace(/\s+/g," ").trim();}
 function esc(t){return(t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
-function listH(arr){if(!arr?.length) return"<p style='color:var(--muted)'>No data.</p>";
-  return`<ul class="slist">${arr.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`;}
+function listH(arr){if(!arr?.length)return"<p style='color:var(--muted)'>No data.</p>";return`<ul class="slist">${arr.map(i=>`<li>${esc(i)}</li>`).join("")}</ul>`;}
 
 /* ── STUDY HELPER ── */
 function showSummary(){
@@ -736,13 +715,8 @@ function showSummary(){
   fetch(`/page_text/${pdfName}/${pg}`).then(r=>r.json()).then(data=>{
     const txt=norm(data.text||"");
     let ms=[];
-    for(const k in sumData.sections){
-      const s=sumData.sections[k];const t=norm(s.title||k);
-      if(t&&txt.includes(t.substring(0,Math.min(t.length,40)))) ms.push(s);
-    }
-    if(!ms.length) for(const k in sumData.sections){
-      const s=sumData.sections[k];if(pg>=s.start_page&&pg<=s.end_page) ms.push(s);
-    }
+    for(const k in sumData.sections){const s=sumData.sections[k];const t=norm(s.title||k);if(t&&txt.includes(t.substring(0,Math.min(t.length,40))))ms.push(s);}
+    if(!ms.length)for(const k in sumData.sections){const s=sumData.sections[k];if(pg>=s.start_page&&pg<=s.end_page)ms.push(s);}
     const seen=new Set();ms=ms.filter(s=>{if(seen.has(s.title))return false;seen.add(s.title);return true;});
     matched=ms[0]||{main_idea:sumData.global_summary||"No summary.",key_points:[],steps:[],formulae:[],code_snippet:[],comparison_points:[],definitions:[],examples:[],exam_questions:[]};
     const cats=[["summary","Summary"],["points","Key Points"],["steps","Steps"],["formula","Formula"],["code","Code"],["comparison","Comparison"],["definitions","Definitions"],["examples","Examples"],["exam","Exam Qs"]];
@@ -790,99 +764,33 @@ function openAskBook(){
 }
 function setAM(m){askMode=m;document.querySelectorAll(".mt").forEach(b=>b.classList.toggle("on",b.dataset.m===m));}
 function askQ(){
-  const inp = document.getElementById("askInput");
-  const q = (inp?.value || "").trim();
-
-  if(!q){
-    alert("Enter a question.");
-    return;
-  }
-
-  document.getElementById("askAns").innerHTML = "<p class='loading-txt'>Searching…</p>";
-  ["askMeta","askSrc","askFU"].forEach(id => {
-    document.getElementById(id).innerHTML = "";
-  });
-
-  fetch("/ask_book", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      pdf_name: pdfName,
-      question: q,
-      current_page: pg,
-      mode: askMode
-    })
-  })
-  .then(r => r.json())
-  .then(d => {
-    document.getElementById("askAns").textContent = d.answer || "No answer.";
-
-    const cc =
-      d.confidence === "high" ? "ch" :
-      d.confidence === "medium" ? "cm" : "cl";
-
-    document.getElementById("askMeta").innerHTML = `
-      <div class="crow">
-        <span class="cbadge ${cc}">Confidence: ${d.confidence || "low"}</span>
-        <span class="chip">Intent: ${d.intent || "general"}</span>
-        <span class="chip">Mode: ${d.mode || askMode}</span>
-      </div>
-    `;
-
-    if(d.matched_section || d.source_page){
-      document.getElementById("askSrc").innerHTML = `
-        <div class="srcbox">
-          <b>Topic:</b> ${d.matched_section || "Unknown"}<br>
-          <b>Source page:</b> ${d.source_page || "N/A"} |
-          <b>Current:</b> ${pg}
-        </div>
-      `;
+  const inp=document.getElementById("askInput");
+  const q=(inp?.value||"").trim();
+  if(!q){alert("Enter a question.");return;}
+  document.getElementById("askAns").innerHTML="<p class='loading-txt'>Searching…</p>";
+  ["askMeta","askSrc","askFU"].forEach(id=>{document.getElementById(id).innerHTML="";});
+  fetch("/ask_book",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pdf_name:pdfName,question:q,current_page:pg,mode:askMode})})
+  .then(r=>r.json()).then(d=>{
+    document.getElementById("askAns").textContent=d.answer||"No answer.";
+    const cc=d.confidence==="high"?"ch":d.confidence==="medium"?"cm":"cl";
+    document.getElementById("askMeta").innerHTML=`<div class="crow"><span class="cbadge ${cc}">Confidence: ${d.confidence||"low"}</span><span class="chip">Intent: ${d.intent||"general"}</span><span class="chip">Mode: ${d.mode||askMode}</span></div>`;
+    if(d.matched_section||d.source_page){
+      document.getElementById("askSrc").innerHTML=`<div class="srcbox"><b>Topic:</b> ${d.matched_section||"Unknown"}<br><b>Source page:</b> ${d.source_page||"N/A"} | <b>Current:</b> ${pg}</div>`;
     }
-
     if(d.followups?.length){
-      document.getElementById("askFU").innerHTML = `
-        <p style="font-size:12px;color:var(--muted);margin:12px 0 7px;font-weight:700">
-          SUGGESTED FOLLOW-UPS
-        </p>
-        <div class="fulist">
-          ${d.followups.map(fq => `
-            <button class="fubtn" onclick='applyFU(${JSON.stringify(fq)})'>
-              ${esc(fq)}
-            </button>
-          `).join("")}
-        </div>
-      `;
+      document.getElementById("askFU").innerHTML=`<p style="font-size:12px;color:var(--muted);margin:12px 0 7px;font-weight:700">SUGGESTED FOLLOW-UPS</p><div class="fulist">${d.followups.map(fq=>`<button class="fubtn" onclick='applyFU(${JSON.stringify(fq)})'>${esc(fq)}</button>`).join("")}</div>`;
     }
-  })
-  .catch(() => {
-    document.getElementById("askAns").innerHTML = "<p style='color:var(--muted)'>Error.</p>";
-  });
+  }).catch(()=>{document.getElementById("askAns").innerHTML="<p style='color:var(--muted)'>Error.</p>";});
 }
-function applyFU(q){
-  const i = document.getElementById("askInput");
-  if(i){
-    i.value = q;
-    askQ();
-  }
-}
+function applyFU(q){const i=document.getElementById("askInput");if(i){i.value=q;askQ();}}
 
 /* ── VIDEOS ── */
 function getYTId(url){
   if(!url) return null;
-  const patterns = [
-    /youtube\.com\/embed\/([^?&/]+)/,
-    /youtube\.com\/watch\?v=([^?&/]+)/,
-    /youtu\.be\/([^?&/]+)/,
-    /youtube\.com\/v\/([^?&/]+)/,
-  ];
-  for(const p of patterns){
-    const m = url.match(p);
-    if(m) return m[1];
-  }
+  const patterns=[/youtube\.com\/embed\/([^?&/]+)/,/youtube\.com\/watch\?v=([^?&/]+)/,/youtu\.be\/([^?&/]+)/,/youtube\.com\/v\/([^?&/]+)/];
+  for(const p of patterns){const m=url.match(p);if(m)return m[1];}
   return url;
 }
-
-
 function getVideos(){
   if(guestMode){cd();guestBlock();return;}
   if(previewMode){alert("Login required.");return;}
@@ -890,68 +798,30 @@ function getVideos(){
   document.getElementById("vptitle").textContent=`Videos — Page ${pg}`;
   document.getElementById("vpbody").innerHTML="<p class='loading-txt'>Finding videos…</p>";
   vp.style.display="block";
-
   fetch(`/page_text/${pdfName}/${pg}`).then(r=>r.json()).then(data=>{
     const txt=data.text||"";
-    if(!txt.trim()){
-      document.getElementById("vpbody").innerHTML="<p class='loading-txt'>No text on this page.</p>";
-      return;
-    }
-
+    if(!txt.trim()){document.getElementById("vpbody").innerHTML="<p class='loading-txt'>No text on this page.</p>";return;}
     fetch("/ai_videos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:txt})})
     .then(r=>r.json()).then(d=>{
       let h="";
-
-      if(d.topics?.length)
-  h+=`<p style="font-size:12px;color:#888;font-weight:600;margin-bottom:12px;letter-spacing:0.04em;text-transform:uppercase">${d.topics.join(" · ")}</p>`;
-
-      // Deduplicate by URL
-      const seen = new Set();
-      const unique = (d.videos||[]).filter(v => {
-      const id = getYTId(v.url);
-      if(!id || seen.has(id)) return false;
-      seen.add(id);
-      return true;
-    });
-
-      if(!unique.length){
-        h+="<p class='loading-txt'>No videos found.</p>";
-      } else {
-        unique.forEach(v => {
-        h+=`<div class="vc">
-          <iframe src="${v.url}" frameborder="0" allowfullscreen></iframe>
-          <div class="vc-info">
-            <h4>${esc(v.title)}</h4>
-            <p>${esc(v.matched_topic||"General")}</p>
-          </div>
-        </div>`;
-      });
-      }
-
+      if(d.topics?.length) h+=`<p style="font-size:12px;color:#888;font-weight:600;margin-bottom:12px;letter-spacing:0.04em;text-transform:uppercase">${d.topics.join(" · ")}</p>`;
+      const seen=new Set();
+      const unique=(d.videos||[]).filter(v=>{const id=getYTId(v.url);if(!id||seen.has(id))return false;seen.add(id);return true;});
+      if(!unique.length){h+="<p class='loading-txt'>No videos found.</p>";}
+      else{unique.forEach(v=>{h+=`<div class="vc"><iframe src="${v.url}" frameborder="0" allowfullscreen></iframe><div class="vc-info"><h4>${esc(v.title)}</h4><p>${esc(v.matched_topic||"General")}</p></div></div>`;});}
       document.getElementById("vpbody").innerHTML=h;
-    }).catch(()=>{
-      document.getElementById("vpbody").innerHTML="<p class='loading-txt'>Error.</p>";
-    });
-
-  }).catch(()=>{
-    document.getElementById("vpbody").innerHTML="<p class='loading-txt'>Error.</p>";
-  });
+    }).catch(()=>{document.getElementById("vpbody").innerHTML="<p class='loading-txt'>Error.</p>";});
+  }).catch(()=>{document.getElementById("vpbody").innerHTML="<p class='loading-txt'>Error.</p>";});
 }
-function openGoToPage(){
-  openModal("Go to Page", `
-    <div style="display:flex;flex-direction:column;gap:16px;padding-top:4px">
-      <p style="font-size:13px;color:var(--muted)">
-        This book has <strong style="color:var(--white)">${total} pages</strong>. 
-        You are on page <strong style="color:var(--white)">${pg}</strong>.
-      </p>
 
+function openGoToPage(){
+  openModal("Go to Page",`
+    <div style="display:flex;flex-direction:column;gap:16px;padding-top:4px">
+      <p style="font-size:13px;color:var(--muted)">This book has <strong style="color:var(--white)">${total} pages</strong>. You are on page <strong style="color:var(--white)">${pg}</strong>.</p>
       <div class="askrow">
-        <input id="gotoInput" type="number" min="1" max="${total}" 
-          placeholder="Enter page number…"
-          onkeydown="if(event.key==='Enter') doGoto()"/>
+        <input id="gotoInput" type="number" min="1" max="${total}" placeholder="Enter page number…" onkeydown="if(event.key==='Enter') doGoto()"/>
         <button class="askbtn" onclick="doGoto()">Go</button>
       </div>
-
       <p style="font-size:12px;color:var(--muted)">Quick jumps:</p>
       <div class="qgrid">
         <button class="qb" onclick="doGoto(1)">First</button>
@@ -959,241 +829,96 @@ function openGoToPage(){
         <button class="qb" onclick="doGoto(total)">Last</button>
         <button class="qb" onclick="doGoto(pg)">Current</button>
       </div>
-
-      ${ttsActive ? `<div class="srcbox">&#128266; TTS is on — the new page will be read automatically.</div>` : ""}
-    </div>
-  `);
-  // Focus input after modal opens
-  setTimeout(() => document.getElementById("gotoInput")?.focus(), 100);
+      ${ttsActive?`<div class="srcbox">&#128266; TTS is on — the new page will be read automatically.</div>`:""}
+    </div>`);
+  setTimeout(()=>document.getElementById("gotoInput")?.focus(),100);
 }
-
 function doGoto(n){
-  const target = n ?? parseInt(document.getElementById("gotoInput")?.value);
-  if(isNaN(target) || target < 1 || target > total){
-    announce(`Please enter a page between 1 and ${total}`);
-    return;
-  }
-  if(guestMode && target > GUEST_PAGE_LIMIT){
-    closeModal();
-    showGuestWall();
-    return;
-  }
-  closeModal();
-  stage.scrollTop = 0;
-  stage.scrollLeft = 0;
-  renderPage(target, true); // true = auto-speak if TTS active
+  const target=n??parseInt(document.getElementById("gotoInput")?.value);
+  if(isNaN(target)||target<1||target>total){announce(`Please enter a page between 1 and ${total}`);return;}
+  if(guestMode&&target>GUEST_PAGE_LIMIT){closeModal();showGuestWall();return;}
+  closeModal();stage.scrollTop=0;stage.scrollLeft=0;renderPage(target,true);
 }
 </script>
 
-
 <script>
-/* ── TEXT-TO-SPEECH ENGINE ── */
-const synth = window.speechSynthesis;
-let ttsUtterance = null;
-let ttsActive = false;
-let ttsRate = 1;
-let ttsPitch = 1;
-let ttsVoice = null;
-let ttsAutoAdvance = true;
-let ttsHighlight = true;
-let ttsWordIndex = 0;
-let ttsSpans = [];
+/* ── TEXT-TO-SPEECH ── */
+const synth=window.speechSynthesis;
+let ttsUtterance=null,ttsActive=false,ttsRate=1,ttsPitch=1,ttsVoice=null;
+let ttsAutoAdvance=true,ttsSpans=[];
 
-/* Live region for screen readers */
-const liveRegion = document.createElement("div");
-liveRegion.setAttribute("aria-live", "polite");
-liveRegion.setAttribute("aria-atomic", "true");
-liveRegion.className = "sr-only";
-liveRegion.style.cssText = "position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;";
+const liveRegion=document.createElement("div");
+liveRegion.setAttribute("aria-live","polite");liveRegion.setAttribute("aria-atomic","true");
+liveRegion.style.cssText="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;";
 document.body.appendChild(liveRegion);
+function announce(msg){liveRegion.textContent="";setTimeout(()=>liveRegion.textContent=msg,50);}
 
-function announce(msg) { liveRegion.textContent = ""; setTimeout(() => liveRegion.textContent = msg, 50); }
-
-/* Load voices (async on some browsers) */
-let voices = [];
-function loadVoices() {
-  voices = synth.getVoices().filter(v => v.lang.startsWith("en"));
-  if (!voices.length) voices = synth.getVoices();
-  ttsVoice = voices[0] || null;
-}
+let voices=[];
+function loadVoices(){voices=synth.getVoices().filter(v=>v.lang.startsWith("en"));if(!voices.length)voices=synth.getVoices();ttsVoice=voices[0]||null;}
 loadVoices();
-if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = loadVoices;
+if(synth.onvoiceschanged!==undefined) synth.onvoiceschanged=loadVoices;
 
-/* Fetch current page text then speak */
-function startTTS(pageNum) {
+function startTTS(pageNum){
   stopTTS(false);
-  fetch(`/page_text/${pdfName}/${pageNum}`)
-    .then(r => r.json())
-    .then(d => {
-      const text = (d.text || "").trim();
-      if (!text) { announce("No readable text on this page."); return; }
+  fetch(`/page_text/${pdfName}/${pageNum}`).then(r=>r.json()).then(d=>{
+    const text=(d.text||"").trim();
+    if(!text){announce("No readable text on this page.");return;}
+    ttsUtterance=new SpeechSynthesisUtterance(text);
+    ttsUtterance.rate=ttsRate;ttsUtterance.pitch=ttsPitch;
+    if(ttsVoice) ttsUtterance.voice=ttsVoice;
+    ttsUtterance.onend=()=>{clearHighlights();if(ttsAutoAdvance&&pg<total){nextPage();setTimeout(()=>startTTS(pg),800);}else{setTTSBtn(false);announce("Finished reading.");}};
+    ttsUtterance.onerror=()=>{setTTSBtn(false);announce("Speech error.");};
+    synth.speak(ttsUtterance);ttsActive=true;setTTSBtn(true);announce(`Reading page ${pageNum}`);
+  }).catch(()=>announce("Could not load page text."));
+}
+function stopTTS(withAnnounce=true){synth.cancel();ttsActive=false;clearHighlights();setTTSBtn(false);if(withAnnounce)announce("Stopped reading.");}
+function pauseTTS(){if(synth.speaking&&!synth.paused){synth.pause();announce("Paused.");}else if(synth.paused){synth.resume();announce("Resumed.");}}
+function toggleTTS(){if(guestMode){guestBlock();return;}if(ttsActive){stopTTS();}else{startTTS(pg);}}
+function clearHighlights(){ttsSpans.forEach(s=>s.style.background="");ttsSpans=[];}
 
-      ttsUtterance = new SpeechSynthesisUtterance(text);
-      ttsUtterance.rate = ttsRate;
-      ttsUtterance.pitch = ttsPitch;
-      if (ttsVoice) ttsUtterance.voice = ttsVoice;
-
-      /* Word highlight */
-      // if (ttsHighlight) {
-      //   ttsSpans = Array.from(tlEl.querySelectorAll("span"));
-      //   ttsWordIndex = 0;
-      //   ttsUtterance.onboundary = e => {
-      //     if (e.name !== "word") return;
-      //     ttsSpans.forEach(s => s.style.background = "");
-      //     /* highlight nearest span by char offset (approximate) */
-      //     const charPos = e.charIndex;
-      //     let acc = 0, best = null;
-      //     ttsSpans.forEach(s => {
-      //       const len = (s.textContent || "").length + 1;
-      //       if (acc <= charPos && charPos < acc + len) best = s;
-      //       acc += len;
-      //     });
-      //     if (best) {
-      //       best.style.background = "rgba(99,102,241,0.45)";
-      //       best.style.borderRadius = "3px";
-      //       best.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      //     }
-      //   };
-      // }
-
-      ttsUtterance.onend = () => {
-        clearHighlights();
-        if (ttsAutoAdvance && pg < total) {
-          nextPage();
-          /* small delay lets renderPage settle */
-          setTimeout(() => startTTS(pg), 800);
-        } else {
-          setTTSBtn(false);
-          announce("Finished reading.");
-        }
-      };
-
-      ttsUtterance.onerror = () => { setTTSBtn(false); announce("Speech error."); };
-
-      synth.speak(ttsUtterance);
-      ttsActive = true;
-      setTTSBtn(true);
-      announce(`Reading page ${pageNum}`);
-    })
-    .catch(() => announce("Could not load page text."));
+function setTTSBtn(on){
+  const btn=document.getElementById("ttsBtn");
+  if(btn){btn.setAttribute("aria-pressed",on?"true":"false");btn.style.background=on?"linear-gradient(135deg,var(--acc),var(--acc2))":"";btn.style.color=on?"#fff":"";}
+  const sb=document.getElementById("spTtsBtn");
+  if(sb){sb.classList.toggle("sp-tts-on",on);sb.title=on?"Stop reading (S)":"Read aloud (S)";}
 }
 
-function stopTTS(withAnnounce = true) {
-  synth.cancel();
-  ttsActive = false;
-  clearHighlights();
-  setTTSBtn(false);
-  if (withAnnounce) announce("Stopped reading.");
-}
-
-function pauseTTS() {
-  if (synth.speaking && !synth.paused) { synth.pause(); announce("Paused."); }
-  else if (synth.paused) { synth.resume(); announce("Resumed."); }
-}
-
-function toggleTTS() {
-  if(guestMode){guestBlock();return;}
-  if (ttsActive) { stopTTS(); } else { startTTS(pg); }
-}
-
-function clearHighlights() {
-  ttsSpans.forEach(s => s.style.background = "");
-  ttsSpans = [];
-}
-
-function setTTSBtn(on) {
-  const btn = document.getElementById("ttsBtn");
-  if (!btn) return;
-  btn.setAttribute("aria-pressed", on ? "true" : "false");
-  btn.style.background = on ? "linear-gradient(135deg,var(--acc),var(--acc2))" : "";
-  btn.style.color = on ? "#fff" : "";
-  btn.title = on ? "Stop reading (S)" : "Read aloud (S)";
-}
-
-/* Keyboard shortcuts */
-document.addEventListener("keydown", e => {
-  if (document.activeElement?.tagName === "INPUT") return;
-  if (e.key === "s" || e.key === "S") { e.preventDefault(); toggleTTS(); }
-  if (e.key === "[") { ttsRate = Math.max(0.5, +(ttsRate - 0.25).toFixed(2)); if (ttsActive) { stopTTS(false); startTTS(pg); } }
-  if (e.key === "]") { ttsRate = Math.min(2, +(ttsRate + 0.25).toFixed(2)); if (ttsActive) { stopTTS(false); startTTS(pg); } }
-  if (e.key === "p" || e.key === "P") { if (ttsActive) pauseTTS(); }
+document.addEventListener("keydown",e=>{
+  if(document.activeElement?.tagName==="INPUT") return;
+  if(e.key==="s"||e.key==="S"){e.preventDefault();toggleTTS();}
+  if(e.key==="["){ttsRate=Math.max(0.5,+(ttsRate-0.25).toFixed(2));if(ttsActive){stopTTS(false);startTTS(pg);}}
+  if(e.key==="]"){ttsRate=Math.min(2,+(ttsRate+0.25).toFixed(2));if(ttsActive){stopTTS(false);startTTS(pg);}}
+  if(e.key==="p"||e.key==="P"){if(ttsActive)pauseTTS();}
 });
 
-/* ── TTS SETTINGS PANEL (in modal) ── */
-function openTTSPanel() {
+function openTTSPanel(){
   if(guestMode){cd();guestBlock();return;}
   loadVoices();
-  const voiceOpts = voices.map((v, i) =>
-    `<option value="${i}" ${v === ttsVoice ? "selected" : ""}>${v.name} (${v.lang})</option>`
-  ).join("");
-
-  openModal("Read Aloud Settings", `
+  const voiceOpts=voices.map((v,i)=>`<option value="${i}" ${v===ttsVoice?"selected":""}>${v.name} (${v.lang})</option>`).join("");
+  openModal("Read Aloud Settings",`
     <div style="display:flex;flex-direction:column;gap:16px;padding-top:4px">
-
       <div>
-        <label style="font-size:12px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px">
-          READING SPEED — <span id="rateVal">${ttsRate}×</span>
-        </label>
-        <input type="range" min="0.5" max="2" step="0.25" value="${ttsRate}" style="width:100%"
-          oninput="ttsRate=+this.value;document.getElementById('rateVal').textContent=ttsRate+'×'"/>
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px">
-          <span>0.5× slow</span><span>1× normal</span><span>2× fast</span>
-        </div>
+        <label style="font-size:12px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px">READING SPEED — <span id="rateVal">${ttsRate}×</span></label>
+        <input type="range" min="0.5" max="2" step="0.25" value="${ttsRate}" style="width:100%" oninput="ttsRate=+this.value;document.getElementById('rateVal').textContent=ttsRate+'×'"/>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:3px"><span>0.5× slow</span><span>1× normal</span><span>2× fast</span></div>
       </div>
-
       <div>
-        <label style="font-size:12px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px">
-          PITCH — <span id="pitchVal">${ttsPitch}</span>
-        </label>
-        <input type="range" min="0.5" max="2" step="0.1" value="${ttsPitch}" style="width:100%"
-          oninput="ttsPitch=+this.value;document.getElementById('pitchVal').textContent=ttsPitch.toFixed(1)"/>
+        <label style="font-size:12px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px">PITCH — <span id="pitchVal">${ttsPitch}</span></label>
+        <input type="range" min="0.5" max="2" step="0.1" value="${ttsPitch}" style="width:100%" oninput="ttsPitch=+this.value;document.getElementById('pitchVal').textContent=ttsPitch.toFixed(1)"/>
       </div>
-
       <div>
         <label style="font-size:12px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px">VOICE</label>
-        <select style="width:100%;padding:8px;border-radius:8px;background:var(--surf2);border:1px solid var(--bdr);color:var(--white);font-size:13px"
-          onchange="ttsVoice=voices[this.value]" aria-label="Select voice">
-          ${voiceOpts || "<option>Default voice</option>"}
+        <select style="width:100%;padding:8px;border-radius:8px;background:var(--surf2);border:1px solid var(--bdr);color:var(--white);font-size:13px" onchange="ttsVoice=voices[this.value]">
+          ${voiceOpts||"<option>Default voice</option>"}
         </select>
       </div>
-
-      <!--<div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:13px">Word highlight while reading</span>
-        <label style="position:relative;display:inline-block;width:44px;height:24px">
-          <input type="checkbox" ${ttsHighlight?"checked":""} 
-            onchange="ttsHighlight=this.checked"
-            style="opacity:0;width:0;height:0" aria-label="Word highlight"/>
-          <span onclick="this.previousElementSibling.click()" style="position:absolute;cursor:pointer;inset:0;background:${ttsHighlight?"var(--acc)":"var(--surf2)"};border-radius:999px;transition:.2s">
-            <span style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;transform:${ttsHighlight?"translateX(20px)":"none"}"></span>
-          </span>
-        </label>
-      </div>-->
-
-      <!--<div style="display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:13px">Auto-advance to next page</span>
-        <label style="position:relative;display:inline-block;width:44px;height:24px">
-          <input type="checkbox" ${ttsAutoAdvance?"checked":""}
-            onchange="ttsAutoAdvance=this.checked"
-            style="opacity:0;width:0;height:0" aria-label="Auto advance pages"/>
-          <span onclick="this.previousElementSibling.click()" style="position:absolute;cursor:pointer;inset:0;background:${ttsAutoAdvance?"var(--acc)":"var(--surf2)"};border-radius:999px;transition:.2s">
-            <span style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s;transform:${ttsAutoAdvance?"translateX(20px)":"none"}"></span>
-          </span>
-        </label>
-      </div>-->
-
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
-        <button class="askbtn" onclick="closeModal();startTTS(pg)" style="flex:1">
-          ▶ Start Reading Page ${pg === undefined ? '' : ''}
-        </button>
+        <button class="askbtn" onclick="closeModal();startTTS(pg)" style="flex:1">▶ Start Reading</button>
         <button class="qb" onclick="stopTTS()">Stop</button>
         <button class="qb" onclick="pauseTTS()">Pause / Resume</button>
       </div>
-
-      <p style="font-size:11px;color:var(--muted);margin-top:4px">
-        Keyboard: <kbd>S</kbd> start/stop · <kbd>P</kbd> pause · <kbd>[</kbd><kbd>]</kbd> speed
-      </p>
-    </div>
-  `);
+      <p style="font-size:11px;color:var(--muted);margin-top:4px">Keyboard: <kbd>S</kbd> start/stop · <kbd>P</kbd> pause · <kbd>[</kbd><kbd>]</kbd> speed</p>
+    </div>`);
 }
 </script>
 </body>

@@ -517,7 +517,7 @@
         /* progress bar */
         .upload-progress {
             display: none;
-            height: 3px;
+            height: 4px;
             background: var(--border);
             border-radius: 2px;
             margin-top: 6px;
@@ -527,10 +527,22 @@
         .upload-progress.show { display: block; }
         .progress-bar {
             height: 100%;
-            background: var(--accent);
+            background: linear-gradient(90deg, var(--accent), #4ec98a);
             border-radius: 2px;
             width: 0%;
-            transition: width .3s ease;
+            transition: width .5s ease;
+        }
+        /* animated stripe for indeterminate state */
+        .progress-bar.indeterminate {
+            width: 100% !important;
+            background: linear-gradient(90deg,
+                transparent 0%, var(--accent) 40%, #4ec98a 60%, transparent 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite linear;
+        }
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
 
         /* ── TOAST ── */
@@ -770,37 +782,123 @@
 <div class="layout">
 
     <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="sidebar-title">Filter Materials</div>
+<aside class="sidebar">
+    <div class="sidebar-title">Filter Materials</div>
 
+    <div class="fg">
+        <label>Programme</label>
+        <select id="progSel" onchange="onFilter()">
+            <option value="">— All Programmes —</option>
+        </select>
+    </div>
+    <div class="fg">
+        <label>Semester</label>
+        <select id="semSel" onchange="onFilter()">
+            <option value="">— All Semesters —</option>
+        </select>
+    </div>
+    <div class="fg" id="minorFg" style="display:none">
+        <label>Minor</label>
+        <select id="minorSel" onchange="onFilter()">
+            <option value="">— All Minors —</option>
+        </select>
+    </div>
+
+    <!-- Add Programme -->
+    <div style="margin-top:16px; border-top:1px solid rgba(255,255,255,.08); padding-top:14px;">
+        <div class="sidebar-title" style="padding-bottom:8px; border-bottom:none; margin-bottom:8px;">
+            Add Programme
+        </div>
         <div class="fg">
-            <label>Programme</label>
-            <select id="progSel" onchange="onProg()">
-                <option value="">— Choose Programme —</option>
+            <label>Select Programme</label>
+            <select id="newProgSel"
+                style="font-family:'DM Sans',sans-serif; font-size:.84rem;
+                       color:#fff; background:rgba(255,255,255,.07);
+                       border:1px solid rgba(255,255,255,.12); border-radius:6px;
+                       padding:9px 12px; width:100%; outline:none; cursor:pointer;
+                       appearance:none;">
+                <option value="">— Select a programme —</option>
+                <optgroup label="── Bachelor Programmes ──" style="background:#1a1a2e">
+                    <option value="BAA|Bachelor of Arts in Assamese">BAA — B.A. in Assamese</option>
+                    <option value="BEG|Bachelor of Arts in English">BEG — B.A. in English</option>
+                    <option value="BAE|Bachelor of Arts in Economics">BAE — B.A. in Economics</option>
+                    <option value="BED|Bachelor of Arts in Education">BED — B.A. in Education</option>
+                    <option value="BAH|Bachelor of Arts in History">BAH — B.A. in History</option>
+                    <option value="BPH|Bachelor of Arts in Philosophy">BPH — B.A. in Philosophy</option>
+                    <option value="BPS|Bachelor of Arts in Political Science">BPS — B.A. in Political Science</option>
+                    <option value="BSO|Bachelor of Arts in Sociology">BSO — B.A. in Sociology</option>
+                    <option value="BA MAJOR|Bachelor of Arts">BA MAJOR — B.A.</option>
+                    <option value="BA PASS|Bachelor of Arts Pass Course">BA PASS — B.A. Pass Course</option>
+                    <option value="BBA|Bachelor of Business Administration">BBA — B.B.A.</option>
+                    <option value="BCOM|Bachelor of Commerce">BCOM — B.Com.</option>
+                    <option value="BCA|Bachelor of Computer Application">BCA — B.C.A.</option>
+                    <option value="BSW|Bachelor of Social Work">BSW — B.S.W.</option>
+                    <option value="BLIS|Bachelor of Library Science">BLIS — B.L.I.S.</option>
+                </optgroup>
+                <optgroup label="── Master Programmes ──" style="background:#1a1a2e">
+                    <option value="MBA|Master of Business Administration">MBA — M.B.A.</option>
+                    <option value="MAS|Master of Arts in Assamese">MAS — M.A. Assamese</option>
+                    <option value="MEG|Master of Arts in English">MEG — M.A. English</option>
+                    <option value="MPS|Master of Arts in Political Science">MPS — M.A. Political Science</option>
+                    <option value="MSO|Master of Arts in Sociology">MSO — M.A. Sociology</option>
+                    <option value="MAE|Master of Arts in Economics">MAE — M.A. Economics</option>
+                    <option value="M.COM|Master in Commerce">M.COM — M.Com.</option>
+                    <option value="MScIT|Master of Science in Information Technology">MScIT — M.Sc. IT</option>
+                    <option value="MED|Master of Arts in Education">MED — M.A. Education</option>
+                    <option value="MJMC|Master of Arts in Journalism">MJMC — M.A. Journalism</option>
+                    <option value="MSW|Master of Social Work">MSW — M.S.W.</option>
+                    <option value="MAH|Master of Arts in History">MAH — M.A. History</option>
+                    <option value="MPH|Master of Arts in Philosophy">MPH — M.A. Philosophy</option>
+                    <option value="MMA|Master of Science in Mathematics">MMA — M.Sc. Mathematics</option>
+                    <option value="MHN|Master of Arts in Hindi">MHN — M.A. Hindi</option>
+                    <option value="MABN|Master of Arts in Bengali">MABN — M.A. Bengali</option>
+                    <option value="MSK|Master of Arts in Sanskrit">MSK — M.A. Sanskrit</option>
+                    <option value="MYG|Master of Arts in Yoga">MYG — M.A. Yoga</option>
+                </optgroup>
+                <optgroup label="── Diploma Programmes ──" style="background:#1a1a2e">
+                    <option value="DJMC|Diploma in Journalism and Mass Communication">DJMC — Diploma Journalism</option>
+                    <option value="DCS|Diploma in Computer Science">DCS — Diploma Computer Science</option>
+                    <option value="DBM|Diploma in Business Management">DBM — Diploma Business Mgmt.</option>
+                    <option value="DLIS|Diploma in Library and Information Science">DLIS — Diploma Library Science</option>
+                    <option value="DHRM|Diploma in Human Resource Management">DHRM — Diploma HRM</option>
+                </optgroup>
             </select>
         </div>
-        <div class="fg">
-            <label>Semester</label>
-            <select id="semSel" onchange="onSem()" disabled>
-                <option value="">— Semester —</option>
-            </select>
-        </div>
+        <button onclick="addProgramme()"
+            style="width:100%; margin-top:8px; padding:9px;
+                   background:var(--accent); color:#fff; border:none;
+                   border-radius:6px; font-family:'DM Sans',sans-serif;
+                   font-size:.82rem; font-weight:600; cursor:pointer;
+                   transition:background .15s;"
+            onmouseover="this.style.background='#222d70'"
+            onmouseout="this.style.background='var(--accent)'">
+            + Add &amp; Refresh
+        </button>
+    </div>
 
-        <div class="sidebar-stats" id="sideStats" style="display:none">
-            <div class="sstat">
-                <span class="sstat-label">Total Materials</span>
-                <span class="sstat-val" id="statTotal">—</span>
-            </div>
-            <div class="sstat">
-                <span class="sstat-label">Ready</span>
-                <span class="sstat-val green" id="statReady">—</span>
-            </div>
-            <div class="sstat">
-                <span class="sstat-label">Awaiting Upload</span>
-                <span class="sstat-val amber" id="statPending">—</span>
-            </div>
+    <!-- Added Programmes List -->
+    <div id="progListWrap" style="display:none; margin-top:16px; border-top:1px solid rgba(255,255,255,.08); padding-top:14px;">
+        <div class="sidebar-title" style="padding-bottom:8px; border-bottom:none; margin-bottom:8px;">
+            Added Programmes
         </div>
-    </aside>
+        <div id="progList" style="display:flex; flex-direction:column; gap:4px;"></div>
+    </div>
+
+    <div class="sidebar-stats" id="sideStats" style="display:none">
+        <div class="sstat">
+            <span class="sstat-label">Total Materials</span>
+            <span class="sstat-val" id="statTotal">—</span>
+        </div>
+        <div class="sstat">
+            <span class="sstat-label">Ready</span>
+            <span class="sstat-val green" id="statReady">—</span>
+        </div>
+        <div class="sstat">
+            <span class="sstat-label">Awaiting Upload</span>
+            <span class="sstat-val amber" id="statPending">—</span>
+        </div>
+    </div>
+</aside>
 
     <!-- MAIN -->
     <main class="main">
@@ -832,39 +930,272 @@ const TYPE_LABELS = {
 };
 
 // ── Boot ──────────────────────────────────────────────────
+let ALL_DATA = [];
+
+// ── Boot ──────────────────────────────────────────────────
 window.addEventListener("DOMContentLoaded", async () => {
-    const progs = await api("/api/programmes");
-    const sel   = document.getElementById("progSel");
-    progs.forEach(p => {
-        sel.innerHTML += `<option value="${p.id}" data-code="${p.code}" data-name="${p.name}">${p.code} — ${p.name}</option>`;
-    });
+    await loadAll();
 });
 
-// ── Programme changed ─────────────────────────────────────
-async function onProg() {
-    const progId = document.getElementById("progSel").value;
-    const semSel = document.getElementById("semSel");
-    semSel.innerHTML = '<option value="">— Semester —</option>';
-    semSel.disabled  = true;
-    showState("empty");
-    document.getElementById("sideStats").style.display = "none";
-    if (!progId) return;
-
-    const sems = await api(`/api/semesters/${progId}`);
-    sems.forEach(s => { semSel.innerHTML += `<option value="${s}">Semester ${s}</option>`; });
-    semSel.disabled = false;
-}
-
-// ── Semester changed ──────────────────────────────────────
-async function onSem() {
-    const progId = document.getElementById("progSel").value;
-    const sem    = document.getElementById("semSel").value;
-    if (!progId || !sem) { showState("empty"); return; }
+// ── Load everything from API ──────────────────────────────
+async function loadAll() {
     showState("loading");
-    const data = await api(`/api/papers/${progId}/${sem}`);
-    render(data);
-    showState("results");
+    try {
+        ALL_DATA = await api("/api/admin/kkhsou_papers");
+        if (!ALL_DATA.length) {
+            showState("empty");
+            document.getElementById("stateEmpty").querySelector("p").textContent =
+                "No programmes found. Add a programme code in the sidebar to get started.";
+            return;
+        }
+        populateFilters(ALL_DATA);
+        renderAll(ALL_DATA);
+        showState("results");
+    } catch(e) {
+        showState("empty");
+        toast("Failed to load data from API.", "error");
+    }
 }
+
+// ── Populate filter dropdowns ─────────────────────────────
+const LANGUAGES = [
+    "English",
+    "Assamese",
+    "Bengali",
+    "Hindi",
+    "Bodo",
+    "Manipuri",
+    "Nepali",
+    "Urdu",
+    "Sanskrit",
+    "Odia",
+];
+
+const DEGREE_PREFIXES  = ["BA", "BSC", "BCOM", "BCA", "BSW", "BPS", "BBA", "BAA", "BEG", "BAE", "BED", "BAH", "BPH", "BSO", "BLIS"];
+const MASTERS_PREFIXES = ["MBA", "MAS", "MEG", "MPS", "MSO", "MAE", "MCOM", "MSCIT", "MED", "MJMC", "MSW", "MAH", "MPH", "MMA", "MHN", "MABN", "MSK", "MYG", "MCA", "MA", "MSC"];
+
+function isMasters(code) {
+    const c = (code || "").toUpperCase().replace(/[.\s]/g, "");
+    return MASTERS_PREFIXES.some(p => c.startsWith(p));
+}
+const KKHSOU_MINORS  = [
+    "Assamese","Economics","English","History","Philosophy",
+    "Political Science","Sanskrit","Social Work","Sociology",
+    "Education","BBA","Commerce","BCA",
+    "Journalism and Mass Communication","Mathematics"
+];
+
+function isDegree(code) {
+    const c = (code || "").toUpperCase().replace(/[.\s]/g, "");
+    return DEGREE_PREFIXES.some(p => c.startsWith(p));
+}
+
+function populateFilters(data) {
+    const progSel  = document.getElementById("progSel");
+    const semSel   = document.getElementById("semSel");
+    const minorSel = document.getElementById("minorSel");
+    const minorFg  = document.getElementById("minorFg");
+
+    progSel.innerHTML  = '<option value="">— All Programmes —</option>';
+    semSel.innerHTML   = '<option value="">— All Semesters —</option>';
+    minorSel.innerHTML = '<option value="">— All Minors —</option>';
+    minorFg.style.display = "none";
+
+    data.forEach(p => {
+        progSel.innerHTML += `<option value="${p.code}">${p.code} — ${p.name}</option>`;
+    });
+
+    const progCode  = document.getElementById("progSel").value;
+    const maxSem    = progCode && isMasters(progCode) ? 4 : 6;
+    const allSems   = [...new Set(data.flatMap(p => p.semesters.map(s => s.semester)))]
+                        .filter(s => s <= maxSem)
+                        .sort((a,b) => a - b);
+    allSems.forEach(s => { semSel.innerHTML += `<option value="${s}">Semester ${s}</option>`; });
+
+    // Render programme list with remove buttons
+    const progList = document.getElementById("progList");
+    const progListWrap = document.getElementById("progListWrap");
+    if (data.length > 0) {
+        progListWrap.style.display = "block";
+        progList.innerHTML = data.map(p => `
+            <div style="display:flex; align-items:center; gap:6px; padding:6px 8px;
+                        background:rgba(255,255,255,.05); border-radius:6px;">
+                <span style="flex:1; font-size:.78rem; color:rgba(255,255,255,.75);
+                             font-weight:500; white-space:nowrap; overflow:hidden;
+                             text-overflow:ellipsis;"
+                      title="${p.name}">${p.code} — ${p.name}</span>
+                <button onclick="confirmRemoveProgramme('${p.id}', '${p.code}', '${p.name.replace(/'/g,"\'")}')"
+                    title="Remove programme"
+                    style="background:transparent; border:1px solid rgba(255,100,100,.3);
+                           color:rgba(255,100,100,.6); border-radius:4px; padding:3px 7px;
+                           cursor:pointer; font-size:.68rem; flex-shrink:0;
+                           transition:all .14s;"
+                    onmouseover="this.style.background='rgba(255,100,100,.12)'; this.style.color='#ff6464'; this.style.borderColor='rgba(255,100,100,.6)'"
+                    onmouseout="this.style.background='transparent'; this.style.color='rgba(255,100,100,.6)'; this.style.borderColor='rgba(255,100,100,.3)'">
+                    ✕
+                </button>
+            </div>`).join("");
+    } else {
+        progListWrap.style.display = "none";
+    }
+}
+
+// ── Filter changed ────────────────────────────────────────
+function onFilter() {
+    const progCode = document.getElementById("progSel").value;
+    const minorFg  = document.getElementById("minorFg");
+    const minorSel = document.getElementById("minorSel");
+    const semSel   = document.getElementById("semSel");
+
+    // Rebuild semester dropdown capped to programme type
+    const currentSem = parseInt(semSel.value) || null;
+    const maxSem     = progCode && isMasters(progCode) ? 4 : 6;
+    const allSems    = [...new Set(ALL_DATA.flatMap(p => p.semesters.map(s => s.semester)))]
+                         .filter(s => s <= maxSem)
+                         .sort((a,b) => a - b);
+    semSel.innerHTML = '<option value="">— All Semesters —</option>';
+    allSems.forEach(s => { semSel.innerHTML += `<option value="${s}"${s===currentSem?` selected`:""}>Semester ${s}</option>`; });
+
+    const sem  = parseInt(semSel.value) || null;
+    const minor = minorSel.value;
+
+    // Show/hide minor dropdown based on selected programme
+    if (progCode && isDegree(progCode)) {
+        minorFg.style.display = "flex";
+        if (minorSel.options.length <= 1) {
+            minorSel.innerHTML = '<option value="">— All Minors —</option>';
+            KKHSOU_MINORS.forEach(m => {
+                minorSel.innerHTML += `<option value="${m}">${m}</option>`;
+            });
+        }
+    } else {
+        minorFg.style.display = "none";
+        minorSel.innerHTML = '<option value="">— All Minors —</option>';
+    }
+
+    let filtered = ALL_DATA;
+    if (progCode) filtered = filtered.filter(p => p.code === progCode);
+    if (sem) filtered = filtered
+        .map(p => ({ ...p, semesters: p.semesters.filter(s => s.semester === sem) }))
+        .filter(p => p.semesters.length > 0);
+
+    // Filter papers by minor within each semester
+    if (minor) {
+        filtered = filtered.map(p => ({
+            ...p,
+            semesters: p.semesters.map(s => ({
+                ...s,
+                papers: s.papers.filter(paper =>
+                    !paper.minor || paper.minor === minor
+                )
+            })).filter(s => s.papers.length > 0)
+        })).filter(p => p.semesters.length > 0);
+    }
+
+    renderAll(filtered);
+    showState(filtered.length ? "results" : "empty");
+}
+
+// ── Add new programme ─────────────────────────────────────
+async function addProgramme() {
+    const sel   = document.getElementById("newProgSel");
+    const val   = sel.value;
+    if (!val) {
+        toast("Please select a programme.", "error");
+        sel.focus();
+        return;
+    }
+    const [code, name] = val.split("|");
+
+    // Check if already loaded
+    if (ALL_DATA.some(p => p.code === code)) {
+        toast(`Programme "${code}" is already added.`, "info");
+        sel.value = "";
+        return;
+    }
+
+    toast(`Adding "${code}"… this may take a moment.`, "info");
+    sel.disabled = true;
+
+    try {
+        const res  = await fetch("/api/admin/add_programme", {
+            method:  "POST",
+            headers: { "Content-Type": "application/json" },
+            body:    JSON.stringify({ code, name }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        sel.value    = "";
+        sel.disabled = false;
+        toast(data.message || `Programme "${code}" added.`, "success");
+        await loadAll();
+    } catch(err) {
+        sel.disabled = false;
+        toast(err.message || "Failed to add programme.", "error");
+    }
+}
+
+// ── Render all ────────────────────────────────────────────
+function renderAll(data) {
+    const area = document.getElementById("stateResults");
+    area.innerHTML = "";
+    let totalPdfs = 0, readyPdfs = 0;
+
+    data.forEach(prog => {
+        prog.semesters.forEach(semObj => {
+            const hd = document.createElement("div");
+            hd.className = "section-hd";
+            hd.innerHTML = `
+                <span class="section-prog">${prog.code}</span>
+                <span class="section-name">${prog.name}</span>
+                <span class="section-badge">SEM ${semObj.semester}</span>`;
+            area.appendChild(hd);
+
+            // Group by group_code
+            const groups = {};
+            semObj.papers.forEach(p => {
+                const key = p.group_code || "OTHER";
+                if (!groups[key]) groups[key] = { label: p.group_name, papers: [] };
+                groups[key].papers.push(p);
+            });
+
+            let pIdx = 0;
+            Object.entries(groups).forEach(([type, grp]) => {
+                const gEl = document.createElement("div");
+                gEl.className = "tgroup";
+                let papersHTML = "";
+                grp.papers.forEach(paper => {
+                    pIdx++;
+                    const paperObj = {
+                        id:         paper.id,
+                        paper_name: `${paper.paper_code} — ${paper.paper_name}`,
+                        pdfs:       paper.pdfs || [],
+                    };
+                    papersHTML += buildPaperHTML(paperObj, pIdx);
+                    totalPdfs++;
+                });
+                gEl.innerHTML = `
+                    <div class="tgroup-hd">
+                        <span class="tbadge ${type}">${type}</span>
+                        <span class="tgroup-label">${grp.label || TYPE_LABELS[type] || type}</span>
+                        <div class="tgroup-line"></div>
+                    </div>
+                    ${papersHTML}`;
+                area.appendChild(gEl);
+            });
+        });
+    });
+
+    document.getElementById("statTotal").textContent   = totalPdfs;
+    document.getElementById("statReady").textContent   = readyPdfs;
+    document.getElementById("statPending").textContent = totalPdfs - readyPdfs;
+    document.getElementById("sideStats").style.display = "flex";
+
+    // Auto-start polling for any PDFs already processing
+    setTimeout(autoPollProcessing, 300);
+}
+
 
 // ── Build a single paper card ─────────────────────────────
 function buildPaperHTML(paper, pIdx) {
@@ -896,7 +1227,14 @@ function buildPaperHTML(paper, pIdx) {
                 </svg>
             </div>
             <div class="pdf-info">
-                <div class="pdf-title">${pdf.title}</div>
+                <div class="pdf-title">${pdf.title}
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:.6rem;
+                                 background:var(--accent-lt); color:var(--accent);
+                                 border:1px solid #c5caf0; padding:1px 7px;
+                                 border-radius:10px; margin-left:6px; vertical-align:middle;">
+                        ${pdf.language || "English"}
+                    </span>
+                </div>
                 <div class="pdf-path">${shortPath}</div>
                 <div class="upload-progress" id="prog-${pdf.pdf_name}">
                     <div class="progress-bar" id="bar-${pdf.pdf_name}"></div>
@@ -936,11 +1274,19 @@ function buildPaperHTML(paper, pIdx) {
         <div class="pdf-list">
             ${pdfsHTML}
             <div class="add-block-row">
-                <div class="add-block-form" id="add-form-${paper.id}" style="display:none">
+                <div class="add-block-form" id="add-form-${paper.id}" style="display:none; flex-wrap:wrap; gap:8px;">
                     <input type="text" id="add-input-${paper.id}"
                            placeholder="e.g. Block 4 — Advanced Topics"
                            class="block-input"
+                           style="flex:2; min-width:160px;"
                            onkeydown="if(event.key==='Enter') confirmAddBlock(${paper.id}); if(event.key==='Escape') cancelAddBlock(${paper.id})">
+                    <select id="add-lang-${paper.id}"
+                            style="font-family:'DM Sans',sans-serif; font-size:.8rem;
+                                   padding:7px 10px; border-radius:6px; flex:1; min-width:110px;
+                                   border:1.5px solid var(--border); background:#fff;
+                                   color:var(--ink); outline:none; cursor:pointer;">
+                        ${LANGUAGES.map(l => `<option value="${l}">${l}</option>`).join("")}
+                    </select>
                     <button class="btn-confirm-add" onclick="confirmAddBlock(${paper.id})">Add</button>
                     <button class="btn-cancel-add" onclick="cancelAddBlock(${paper.id})">Cancel</button>
                 </div>
@@ -1106,36 +1452,109 @@ async function doUpload(pdfName, pdfId, input) {
 }
 
 // ── Poll status until ready ───────────────────────────────
+// Track active polls so we don't double-poll
+const _activePolls = new Set();
+
 function pollStatus(pdfName, statusEl) {
+    if (_activePolls.has(pdfName)) return;
+    _activePolls.add(pdfName);
+
+    const progEl = document.getElementById(`prog-${pdfName}`);
+    const barEl  = document.getElementById(`bar-${pdfName}`);
+    if (progEl) progEl.classList.add("show");
+
     const interval = setInterval(async () => {
         try {
-            const data = await api(`/api/pdf_status/${pdfName}`);
-            if (data.status === "ready") {
+            const data = await api(`/processing_status/${encodeURIComponent(pdfName)}`);
+            const pct  = data.progress || 0;
+
+            // Update progress bar
+            if (barEl) {
+                if (pct > 0) {
+                    barEl.classList.remove("indeterminate");
+                    barEl.style.width = `${pct}%`;
+                } else {
+                    barEl.classList.add("indeterminate");
+                }
+            }
+
+            // Update status pill message
+            const stageLabels = {
+                extracting:     "Extracting…",
+                saving_pages:   "Reading pages…",
+                structuring:    "Detecting sections…",
+                summarizing:    "Summarising…",
+                global_summary: "Final summary…",
+            };
+            const stageLabel = stageLabels[data.status] || "Processing…";
+            if (statusEl) {
+                statusEl.className = "status-pill processing";
+                statusEl.innerHTML = `<span class="dot"></span>${pct > 0 ? pct + "% — " + stageLabel : stageLabel}`;
+            }
+
+            if (data.status === "done" || data.status === "ready") {
                 clearInterval(interval);
-                statusEl.className = "status-pill ready";
-                statusEl.innerHTML = '<span class="dot"></span>Ready';
-                toast(`"${data.title}" is now ready to read!`, "success");
-                refreshStats();
+                _activePolls.delete(pdfName);
+                if (barEl) barEl.style.width = "100%";
+                setTimeout(() => {
+                    if (progEl) progEl.classList.remove("show");
+                    if (barEl) barEl.style.width = "0%";
+                }, 800);
+                if (statusEl) {
+                    statusEl.className = "status-pill ready";
+                    statusEl.innerHTML = "<span class='dot'></span>Ready";
+                }
+                // Update view button
+                const actionsEl = statusEl ? statusEl.closest(".pdf-row")?.querySelector(`[id^="actions-"]`) : null;
+                if (actionsEl) {
+                    actionsEl.innerHTML = `
+                        <input type="file" accept=".pdf" id="file-${pdfName}"
+                               onchange="doUpload('${pdfName}', '', this)">
+                        <a href="/flipbook/${encodeURIComponent(pdfName)}" target="_blank" class="btn-view">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>View
+                        </a>
+                        <button class="btn-replace" onclick="triggerUpload('${pdfName}', '')">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Replace
+                        </button>`;
+                }
+                toast(`"${pdfName}" is now ready to read!`, "success");
+
             } else if (data.status === "failed") {
                 clearInterval(interval);
-                statusEl.className = "status-pill failed";
-                statusEl.innerHTML = '<span class="dot"></span>Failed';
+                _activePolls.delete(pdfName);
+                if (progEl) progEl.classList.remove("show");
+                if (statusEl) {
+                    statusEl.className = "status-pill failed";
+                    statusEl.innerHTML = "<span class='dot'></span>Failed";
+                }
+                toast(`Processing failed for "${pdfName}".`, "error");
             }
-        } catch { clearInterval(interval); }
-    }, 4000);
+        } catch { clearInterval(interval); _activePolls.delete(pdfName); }
+    }, 3000);
+}
+
+// Auto-start polling for any PDF currently in processing state
+function autoPollProcessing() {
+    document.querySelectorAll(".status-pill.processing").forEach(pill => {
+        const row     = pill.closest(".pdf-row");
+        if (!row) return;
+        const progEl  = row.querySelector("[id^='prog-']");
+        const pdfName = progEl?.id?.replace("prog-", "");
+        if (pdfName) pollStatus(pdfName, pill);
+    });
 }
 
 // ── Refresh sidebar stats ─────────────────────────────────
-async function refreshStats() {
-    const progId = document.getElementById("progSel").value;
-    const sem    = document.getElementById("semSel").value;
-    if (!progId || !sem) return;
-    const data = await api(`/api/papers/${progId}/${sem}`);
-    const s = data.stats;
-    document.getElementById("statTotal").textContent   = s.total_pdfs;
-    document.getElementById("statReady").textContent   = s.ready_pdfs;
-    document.getElementById("statPending").textContent = s.total_pdfs - s.ready_pdfs;
-}
+// async function refreshStats() {
+//     const progId = document.getElementById("progSel").value;
+//     const sem    = document.getElementById("semSel").value;
+//     if (!progId || !sem) return;
+//     const data = await api(`/api/papers/${progId}/${sem}`);
+//     const s = data.stats;
+//     document.getElementById("statTotal").textContent   = s.total_pdfs;
+//     document.getElementById("statReady").textContent   = s.ready_pdfs;
+//     document.getElementById("statPending").textContent = s.total_pdfs - s.ready_pdfs;
+// }
 
 // ── Toggle expand ─────────────────────────────────────────
 function toggle(id) { document.getElementById(`paper-${id}`).classList.toggle("open"); }
@@ -1181,8 +1600,10 @@ function cancelAddBlock(paperId) {
 }
 
 async function confirmAddBlock(paperId) {
-    const input = document.getElementById(`add-input-${paperId}`);
-    const title = input.value.trim();
+    const input    = document.getElementById(`add-input-${paperId}`);
+    const langSel  = document.getElementById(`add-lang-${paperId}`);
+    const title    = input.value.trim();
+    const language = langSel ? langSel.value : "English";
 
     if (!title) { input.focus(); return; }
 
@@ -1190,14 +1611,14 @@ async function confirmAddBlock(paperId) {
         const res  = await fetch("/api/admin/add_block", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ paper_id: paperId, title })
+            body: JSON.stringify({ paper_id: paperId, title, language })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
 
         // Reload the current view to show the new block
         cancelAddBlock(paperId);
-        await onSem();   // re-fetches and re-renders the whole panel
+        await loadAll();   // re-fetches and re-renders the whole panel
         
         // Auto-open the paper that was just edited
         setTimeout(() => {
@@ -1234,6 +1655,44 @@ function confirmRemove(pdfId, title) {
     overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
 }
 
+function confirmRemoveProgramme(progId, code, name) {
+    const existing = document.getElementById("confirmDialog");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "confirm-overlay";
+    overlay.id = "confirmDialog";
+    overlay.innerHTML = `
+        <div class="confirm-box">
+            <div class="confirm-icon">⚠️</div>
+            <h3>Remove Programme</h3>
+            <p>Are you sure you want to remove <strong>"${code} — ${name}"</strong>?
+               This will delete all papers and PDF blocks for this programme permanently.</p>
+            <div class="confirm-actions">
+                <button class="btn-cancel-del" onclick="document.getElementById('confirmDialog').remove()">Cancel</button>
+                <button class="btn-confirm-del" onclick="doRemoveProgramme(${progId}, '${code}')">Yes, Remove</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+}
+
+async function doRemoveProgramme(progId, code) {
+    document.getElementById("confirmDialog")?.remove();
+    try {
+        const res  = await fetch(`/api/admin/remove_programme/${progId}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        toast(data.message || `Programme "${code}" removed.`, "success");
+        // Reset filter if removed programme was selected
+        const progSel = document.getElementById("progSel");
+        if (progSel.value === code) progSel.value = "";
+        await loadAll();
+    } catch(err) {
+        toast(err.message || "Failed to remove programme.", "error");
+    }
+}
+
 async function doRemove(pdfId) {
     document.getElementById("confirmDialog")?.remove();
     try {
@@ -1241,7 +1700,7 @@ async function doRemove(pdfId) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         toast(data.message || "Block removed.", "success");
-        await onSem();   // re-render
+        await loadAll();   // re-render
     } catch(err) {
         toast(err.message || "Failed to remove.", "error");
     }
