@@ -1,6 +1,6 @@
 import requests
 
-YOUTUBE_API_KEY = "AIzaSyDlWYVSOFgrEOe4QnGeP3JhBzUWqfb3lxQ"
+YOUTUBE_API_KEY = "Your API Key Here"  # Replace with your actual YouTube Data API key
 KKHSOU_CHANNEL_ID  = "UCGvoIhFaB3OiRZqpti0eFnw"
 
 # ------------------ SEARCH ------------------
