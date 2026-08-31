@@ -1,9 +1,13 @@
+import os
 from celery import Celery
+
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+
 def make_celery():
     celery = Celery(
         "books_tasks",
-        broker="redis://localhost:6379/0",
-        backend="redis://localhost:6379/0"
+        broker=REDIS_URL,
+        backend=REDIS_URL
     )
 
     celery.conf.update(

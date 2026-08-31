@@ -1,0 +1,68 @@
+services:
+
+  # ── Flask web app ─────────────────────────────────────────
+  web:
+    build: .
+    command: python app.py
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MYSQL_HOST=mysql
+    volumes:
+      - ./uploads:/app/uploads
+      - ./summaries:/app/summaries
+      - ./page_texts:/app/page_texts
+      - ./status:/app/status
+    depends_on:
+      redis:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+
+  # ── Celery worker (same image, different command) ─────────
+  worker:
+    build: .
+    command: celery -A tasks worker --loglevel=info
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - MYSQL_HOST=mysql
+    volumes:
+      - ./uploads:/app/uploads
+      - ./summaries:/app/summaries
+      - ./page_texts:/app/page_texts
+      - ./status:/app/status
+    depends_on:
+      redis:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+
+  # ── Redis (Celery broker + backend) ────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # ── MySQL ───────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DB}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql_data:
