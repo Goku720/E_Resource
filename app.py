@@ -251,7 +251,7 @@ def index():
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    
+
     if session.get("user"):
         if session.get("is_admin"):
             return redirect("/admin")
@@ -442,4 +442,4 @@ def books():
 # =========================================================
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=False, host="0.0.0.0")
