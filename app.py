@@ -30,6 +30,13 @@ os.makedirs(SUMMARY_FOLDER,   exist_ok=True)
 os.makedirs(PAGE_TEXT_FOLDER, exist_ok=True)
 
 
+@app.after_request
+def add_no_cache_headers(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 
 
 # =========================================================
@@ -238,8 +245,19 @@ def kkhsou_student_login(mobile_no, password):
 # LOGIN / LOGOUT
 # =========================================================
 
+@app.route("/")
+def index():
+    return redirect(url_for("login"))
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    
+    if session.get("user"):
+        if session.get("is_admin"):
+            return redirect("/admin")
+        return redirect("/my-courses")
+
+
     if request.method == "POST":
         mobile_or_user = request.form["username"].strip()
         password       = request.form["password"].strip()
@@ -416,6 +434,7 @@ def books():
     files = os.listdir(SUMMARY_FOLDER)
     books_list = [f.replace(".json", "") for f in files if f.endswith(".json")]
     return render_template("books.html", books=books_list)
+
 
 
 # =========================================================
